@@ -1,177 +1,169 @@
-// app/page.tsx (DB 연동 버전)
-import Link from "next/link";
-import { Car, FileText, ChevronRight, ArrowRight, ShieldCheck, Zap, Calculator } from "lucide-react";
-import { supabase } from "@/lib/supabase"; // DB 연결
+"use client";
 
-// 1. DB에서 글 목록 가져오기 (이 코드가 핵심!)
-async function getPosts() {
-  const { data: posts, error } = await supabase
-    .from('posts')
-    .select('*')
-    .order('id', { ascending: false }); // 최신글 순서로
+import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
+import { Car, CheckCircle2, AlertCircle, Loader2, Upload, X } from "lucide-react";
 
-  if (error) {
-    console.error("글 불러오기 실패:", error);
-    return [];
-  }
-  return posts;
-}
+export default function ConsultPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [file, setFile] = useState<File | null>(null); // 파일 저장용
+  const [preview, setPreview] = useState<string>("");  // 미리보기
 
-export default async function Home() {
-  const posts = await getPosts(); // 데이터 가져오기
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    car_model: "", // 차종 부활
+    memo: ""       // 문의사항 부활
+  });
+
+  const handleChange = (e: any) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e: any) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setPreview(URL.createObjectURL(selectedFile));
+    }
+  };
+
+  const clearFile = () => {
+    setFile(null);
+    setPreview("");
+  };
+
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    if (!formData.name || !formData.phone) {
+      alert("이름과 연락처는 필수입니다.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      let imageUrl = "";
+
+      // 1. 파일 업로드
+      if (file) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('consult_photos')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('consult_photos')
+          .getPublicUrl(filePath);
+          
+        imageUrl = publicUrl;
+      }
+
+      // 2. DB 저장
+      const { error } = await supabase
+        .from('customer_consults')
+        .insert([
+          { 
+            name: formData.name, 
+            phone: formData.phone, 
+            car_model: formData.car_model, 
+            memo: formData.memo,
+            image_url: imageUrl, 
+            status: '신규'
+          }
+        ]);
+
+      if (error) throw error;
+
+      alert("상담 신청이 완료되었습니다! 담당자가 곧 연락드립니다.");
+      router.push("/"); 
+
+    } catch (error: any) {
+      console.error("에러 발생:", error);
+      alert("전송 중 오류: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
-      {/* 1. 헤더 */}
-      <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="bg-blue-600 text-white p-1.5 rounded-lg group-hover:bg-blue-700 transition">
-              <Car className="w-5 h-5" />
-            </div>
-            <span className="font-bold text-xl text-slate-900 tracking-tight">CARENS</span>
-          </Link>
-          <Link href="/consult" className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-blue-600 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2">
-            내 견적 진단하기 <ArrowRight className="w-4 h-4" />
-          </Link>
+    <div className="max-w-2xl mx-auto py-12 px-4">
+      <div className="text-center mb-10">
+        <div className="inline-flex items-center justify-center p-3 bg-blue-100 rounded-full mb-4">
+          <Car className="w-8 h-8 text-blue-600" />
         </div>
-      </header>
+        <h1 className="text-3xl font-bold mb-2 text-slate-900">무료 견적 상세 분석</h1>
+        <p className="text-slate-500">
+          받으신 견적서 사진을 올려주시면<br />
+          숨어있는 수수료와 거품을 찾아드립니다.
+        </p>
+      </div>
 
-      {/* 2. 히어로 섹션 */}
-      <section className="relative pt-32 pb-20 px-4 overflow-hidden bg-slate-900 text-white">
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-          <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-blue-600/30 rounded-full blur-[120px]"></div>
-          <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-purple-600/20 rounded-full blur-[100px]"></div>
-        </div>
-
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-blue-400 text-xs font-bold mb-6">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-            </span>
-            2026년형 장기렌트 특판 리스트 업데이트
-          </div>
-          <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight tracking-tight">
-            딜러 수당 거품 뺀<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">진짜 원가 견적</span>을 공개합니다
-          </h1>
-          <p className="text-slate-400 mb-10 text-lg md:text-xl max-w-2xl mx-auto font-light">
-            아직도 월 렌탈료만 보고 계약하시나요?<br />
-            현직 전문가가 분석한 <span className="text-white font-medium">투명한 견적 리포트</span>를 무료로 받아보세요.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/consult" className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-500 transition shadow-lg shadow-blue-900/50 flex items-center justify-center gap-2">
-              <Calculator className="w-5 h-5" />
-              -무료 견적 분석 신청-
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. 신뢰 포인트 */}
-      <section className="py-16 px-4 -mt-10 relative z-20">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6">
-          {[
-            { icon: <Zap className="w-6 h-6 text-yellow-500" />, title: "즉시 출고 시스템", desc: "전국 24개 렌트사 재고 통합 조회로 7일 내 인도 가능합니다." },
-            { icon: <ShieldCheck className="w-6 h-6 text-green-500" />, title: "무심사/예외 승인", desc: "저신용자, 무소득자도 승인 가능한 자체 심사 노하우 보유." },
-            { icon: <Calculator className="w-6 h-6 text-blue-500" />, title: "영업 수수료 0원", desc: "불필요한 딜러 마진을 제거하여 월 납입료를 낮췄습니다." },
-          ].map((item, idx) => (
-            <div key={idx} className="bg-white p-8 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 hover:-translate-y-1 transition duration-300">
-              <div className="bg-slate-50 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                {item.icon}
+      <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+        <div className="p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            
+            {/* 파일 업로드 (부활) */}
+            <div className="mb-8">
+              <label className="block text-sm font-bold mb-2 text-slate-700">견적서 사진 첨부</label>
+              <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition relative">
+                {!preview ? (
+                  <>
+                    <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                    <div className="flex flex-col items-center gap-2 text-slate-400">
+                      <Upload className="w-8 h-8" />
+                      <span className="text-sm">클릭해서 사진을 선택하세요</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="relative">
+                    <img src={preview} alt="미리보기" className="max-h-48 mx-auto rounded-lg shadow-sm" />
+                    <button type="button" onClick={clearFile} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 shadow-md">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
-              <h3 className="font-bold text-lg mb-2 text-slate-900">{item.title}</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">{item.desc}</p>
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* 4. 블로그 리스트 (DB 연동됨) */}
-      <section className="py-16 px-4 bg-slate-50">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-4">
+            {/* 기본 정보 */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-bold mb-2 text-slate-700">이름 <span className="text-red-500">*</span></label>
+                <input name="name" value={formData.name} onChange={handleChange} className="w-full border border-slate-300 p-3 rounded-xl outline-none focus:border-blue-500" placeholder="홍길동" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold mb-2 text-slate-700">연락처 <span className="text-red-500">*</span></label>
+                <input name="phone" value={formData.phone} onChange={handleChange} className="w-full border border-slate-300 p-3 rounded-xl outline-none focus:border-blue-500" placeholder="010-0000-0000" />
+              </div>
+            </div>
+
+            {/* 차종 (부활) */}
             <div>
-              <h2 className="text-3xl font-bold text-slate-900 mb-2">CARENS INSIGHT</h2>
-              <p className="text-slate-500">호갱 탈출을 위한 필수 지식과 노하우</p>
+              <label className="block text-sm font-bold mb-2 text-slate-700">관심 차종</label>
+              <input name="car_model" value={formData.car_model} onChange={handleChange} className="w-full border border-slate-300 p-3 rounded-xl outline-none focus:border-blue-500" placeholder="예: 그랜저, 쏘렌토" />
             </div>
-          </div>
 
-          {/* 게시글이 없을 경우 처리 */}
-          {posts.length === 0 ? (
-            <div className="text-center py-20 text-slate-400">
-              아직 등록된 글이 없습니다. Supabase에서 글을 추가해주세요.
+            {/* 문의사항 (부활) */}
+            <div>
+              <label className="block text-sm font-bold mb-2 text-slate-700">문의 사항</label>
+              <textarea name="memo" value={formData.memo} onChange={handleChange} className="w-full border border-slate-300 p-3 rounded-xl h-24 resize-none outline-none focus:border-blue-500" placeholder="궁금한 점을 적어주세요." />
             </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {posts.map((post: any) => (
-                <Link href={`/posts/${post.id}`} key={post.id} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-slate-100 flex flex-col h-full">
-                  {/* 썸네일 영역 */}
-                  <div className={`h-48 relative overflow-hidden ${post.color_class || 'bg-blue-600'}`}>
-                    <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition"></div>
-                    <div className="absolute bottom-4 left-4">
-                      <span className="bg-white/90 backdrop-blur text-slate-900 text-[10px] font-bold px-2 py-1 rounded shadow-sm">
-                        {post.category}
-                      </span>
-                    </div>
-                  </div>
-                  {/* 텍스트 영역 */}
-                  <div className="p-6 flex flex-col flex-1">
-                    <h3 className="font-bold text-lg mb-3 leading-snug text-slate-800 group-hover:text-blue-600 transition">
-                      {post.title}
-                    </h3>
-                    <p className="text-slate-500 text-sm line-clamp-2 mb-4 flex-1 font-light">
-                      {post.desc_text}
-                    </p>
-                    <div className="flex items-center justify-between text-xs text-slate-400 pt-4 border-t border-slate-50">
-                      <span>{post.date_text}</span>
-                      <span className="flex items-center gap-1 group-hover:translate-x-1 transition text-blue-600 font-bold">
-                        Read More <ChevronRight className="w-3 h-3" />
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
 
-      {/* 5. 하단 CTA */}
-      <section className="py-24 px-4 bg-white">
-        <div className="max-w-4xl mx-auto bg-gradient-to-br from-slate-900 to-blue-900 rounded-3xl p-10 md:p-16 text-center text-white shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
-          <div className="relative z-10">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">내 견적서는 안전할까요?</h2>
-            <p className="text-blue-200 mb-8 text-lg">
-              지금 보고 계신 견적서가 적정한지 무료로 분석해 드립니다.
-            </p>
-            <Link href="/consult" className="inline-flex items-center gap-2 bg-white text-blue-900 font-bold px-10 py-4 rounded-xl hover:bg-blue-50 transition shadow-lg text-lg">
-              <FileText className="w-5 h-5" />
-              전문가 무료 진단 신청
-            </Link>
-          </div>
+            <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white font-bold text-lg py-4 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2">
+              {loading ? <Loader2 className="animate-spin" /> : <><CheckCircle2 /> 무료 분석 신청하기</>}
+            </button>
+          </form>
         </div>
-      </section>
-
-      {/* 6. 푸터 */}
-      <footer className="bg-slate-50 border-t border-slate-200 py-12 px-4 text-sm">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between gap-8 text-slate-500">
-          <div>
-            <div className="flex items-center gap-2 font-bold text-xl text-slate-900 mb-4">
-              <Car className="w-5 h-5" />
-              <span>CARENS</span>
-            </div>
-            <p className="font-light">투명하고 합리적인 자동차 생활의 기준</p>
-          </div>
-          <div className="flex flex-col gap-1 text-right">
-            <span className="font-bold text-slate-900">Contact Us</span>
-            <span>대표: 더바론 | 사업자번호: 000-00-00000</span>
-            <span>contact@carens.com</span>
-          </div>
-        </div>
-      </footer>
+      </div>
     </div>
   );
 }

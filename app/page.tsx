@@ -1,47 +1,63 @@
 import Link from "next/link";
-import { Car, CheckCircle2, FileText, ChevronRight, ArrowRight, ShieldCheck, Zap, Calculator } from "lucide-react";
+import { FileText, ChevronRight, ShieldCheck, Zap, Calculator } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
-export default function Home() {
-  const posts = [
-    { id: 1, category: "필독", title: "계약서 도장 찍기 전 확인해야 할 특약 3가지", desc: "월 렌탈료가 싸다고 덜컥 계약하면 나중에 위약금 폭탄 맞습니다. 독소 조항 체크리스트.", date: "2026.01.30", color: "bg-rose-500" },
-    { id: 2, category: "사업자", title: "법인/개인사업자 세금 1,000만 원 아끼는 법", desc: "단순 비용 처리가 아닙니다. 건보료 절감부터 부가세 환급까지 완벽 정리.", date: "2026.01.29", color: "bg-blue-600" },
-    { id: 3, category: "신용", title: "장기렌트 vs 리스, 신용점수 하락 없는 선택은?", desc: "대출 계획이 있다면 절대 리스를 쓰면 안 됩니다. 금융권 대출 한도를 지키는 전략.", date: "2026.01.28", color: "bg-indigo-500" },
-    { id: 4, category: "꿀팁", title: "대기 없이 일주일 만에 받는 '선발주' 리스트", desc: "인기 차종 1년 대기? 렌트사 선구매 물량을 선점하면 즉시 출고 가능합니다.", date: "2026.01.27", color: "bg-emerald-500" },
-    { id: 5, category: "사고", title: "사고 나도 보험료 할증 0원? 면책금의 진실", desc: "초보 운전자가 장기렌트를 타야 하는 진짜 이유. 사고 처리 비용 완전 분석.", date: "2026.01.26", color: "bg-orange-500" },
-    { id: 6, category: "분석", title: "4년 뒤 인수 vs 반납, 무엇이 이득일까?", desc: "잔존가치 설정에 따른 유불리 분석. 중고차 시세를 예측해 드립니다.", date: "2026.01.25", color: "bg-slate-500" },
-    { id: 7, category: "승인", title: "신용 600점대 저신용자 승인 성공 전략", desc: "무심사 렌트의 함정에 빠지지 마세요. 메이저 렌트사 예외 승인 노하우.", date: "2026.01.24", color: "bg-teal-600" },
-    { id: 8, category: "전기차", title: "전기차 보조금, 렌트사가 먹나요 내가 받나요?", desc: "복잡한 보조금 신청 없이 차값 할인받는 법. 배터리 보증 이슈 정리.", date: "2026.01.23", color: "bg-cyan-600" },
-    { id: 9, category: "비교", title: "쏘렌토 하이브리드, 할부 vs 렌트 5년 총비용", desc: "취등록세, 이자, 보험료까지 싹 다 더해서 엑셀로 비교했습니다. 충격적 결과.", date: "2026.01.22", color: "bg-violet-600" },
-    { id: 10, category: "경고", title: "무보증 0원 광고의 함정, 낚시 견적 구별법", desc: "세상에 공짜는 없습니다. 미끼 상품에 속지 않고 '진짜 원가' 찾는 법.", date: "2026.01.21", color: "bg-red-600" },
-  ];
+export const revalidate = 0; 
+
+// 1. 카테고리 목록을 DB에서 자동으로 가져오기 (하드코딩 제거)
+async function getCategories() {
+  const { data } = await supabase
+    .from('posts')
+    .select('category');
+  
+  if (!data) return ["전체"];
+
+  // 중복 제거 (Set 사용)
+  const uniqueCategories = Array.from(new Set(data.map(item => item.category)));
+  return ["전체", ...uniqueCategories];
+}
+
+// 2. 글 목록 가져오기
+async function getPosts(category?: string) {
+  let query = supabase
+    .from('posts')
+    .select('*')
+    .order('id', { ascending: false });
+
+  if (category && category !== "전체") {
+    query = query.eq('category', category);
+  }
+
+  const { data: posts, error } = await query;
+
+  if (error) {
+    console.error("글 불러오기 실패:", error);
+    return [];
+  }
+  return posts;
+}
+
+export default async function Home({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
+  const params = await searchParams;
+  const selectedCategory = params.category || "전체";
+
+  // 병렬로 데이터 가져오기 (속도 향상)
+  const [categories, posts] = await Promise.all([
+    getCategories(),
+    getPosts(selectedCategory)
+  ]);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
-      {/* 1. 헤더 (Glassmorphism 적용) */}
-      <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="bg-blue-600 text-white p-1.5 rounded-lg group-hover:bg-blue-700 transition">
-              <Car className="w-5 h-5" />
-            </div>
-            <span className="font-bold text-xl text-slate-900 tracking-tight">CARENS</span>
-          </Link>
-          <Link href="/consult" className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-blue-600 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2">
-            내 견적 진단하기 <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </header>
-
-      {/* 2. 히어로 섹션 (임팩트 강조) */}
-      <section className="relative pt-32 pb-20 px-4 overflow-hidden bg-slate-900 text-white">
-        {/* 배경 효과 */}
+    <div className="font-sans text-slate-800">
+      {/* 1. 히어로 섹션 */}
+      <section className="relative pt-20 pb-20 px-4 overflow-hidden bg-slate-900 text-white">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
           <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-blue-600/30 rounded-full blur-[120px]"></div>
           <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-purple-600/20 rounded-full blur-[100px]"></div>
         </div>
 
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-blue-400 text-xs font-bold mb-6 animate-fade-in-up">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-blue-400 text-xs font-bold mb-6">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
@@ -61,14 +77,11 @@ export default function Home() {
               <Calculator className="w-5 h-5" />
               무료 견적 분석 신청
             </Link>
-            <div className="flex items-center justify-center gap-2 text-slate-400 text-sm sm:hidden">
-              <ShieldCheck className="w-4 h-4" /> 개인정보 100% 안전
-            </div>
           </div>
         </div>
       </section>
 
-      {/* 3. 신뢰 포인트 (카드 디자인) */}
+      {/* 2. 신뢰 포인트 */}
       <section className="py-16 px-4 -mt-10 relative z-20">
         <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6">
           {[
@@ -87,58 +100,89 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 4. 블로그 리스트 (매거진 스타일) */}
+      {/* 3. 블로그 리스트 */}
       <section className="py-16 px-4 bg-slate-50">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-4">
-            <div>
-              <h2 className="text-3xl font-bold text-slate-900 mb-2">CARENS INSIGHT</h2>
-              <p className="text-slate-500">호갱 탈출을 위한 필수 지식과 노하우</p>
+          
+          <div className="mb-10">
+            <h2 className="text-3xl font-bold text-slate-900 mb-2">CARENS INSIGHT</h2>
+            <p className="text-slate-500 mb-8">호갱 탈출을 위한 필수 지식과 노하우</p>
+
+            {/* ✅ 자동 생성된 카테고리 버튼들 */}
+            <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
+              {categories.map((category) => (
+                <Link
+                  key={category}
+                  href={category === "전체" ? "/" : `/?category=${category}`}
+                  scroll={false}
+                  className={`
+                    whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 border
+                    ${selectedCategory === category 
+                      ? "bg-slate-900 text-white border-slate-900 shadow-lg scale-105" 
+                      : "bg-white text-slate-500 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
+                    }
+                  `}
+                >
+                  {category}
+                </Link>
+              ))}
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {posts.map((post) => (
-              <Link href={`/posts/${post.id}`} key={post.id} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-slate-100 flex flex-col h-full">
-                {/* 썸네일 영역 */}
-                <div className={`h-48 relative overflow-hidden ${post.color}`}>
-                  <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition"></div>
-                  <div className="absolute bottom-4 left-4">
-                    <span className="bg-white/90 backdrop-blur text-slate-900 text-[10px] font-bold px-2 py-1 rounded shadow-sm">
-                      {post.category}
-                    </span>
-                  </div>
-                </div>
-                {/* 텍스트 영역 */}
-                <div className="p-6 flex flex-col flex-1">
-                  <h3 className="font-bold text-lg mb-3 leading-snug text-slate-800 group-hover:text-blue-600 transition">
-                    {post.title}
-                  </h3>
-                  <p className="text-slate-500 text-sm line-clamp-2 mb-4 flex-1 font-light">
-                    {post.desc}
-                  </p>
-                  <div className="flex items-center justify-between text-xs text-slate-400 pt-4 border-t border-slate-50">
-                    <span>{post.date}</span>
-                    <span className="flex items-center gap-1 group-hover:translate-x-1 transition text-blue-600 font-bold">
-                      Read More <ChevronRight className="w-3 h-3" />
-                    </span>
-                  </div>
-                </div>
+          {!posts || posts.length === 0 ? (
+            <div className="text-center py-32 bg-white rounded-2xl border border-slate-100 shadow-sm">
+              <p className="text-2xl mb-2">텅 비었습니다 😅</p>
+              <p className="text-slate-400">"{selectedCategory}" 카테고리에는 아직 글이 없네요.</p>
+              <Link href="/" className="inline-block mt-4 text-blue-600 font-bold hover:underline">
+                전체 글로 돌아가기
               </Link>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {posts.map((post: any) => (
+                <Link href={`/posts/${post.id}`} key={post.id} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-slate-100 flex flex-col h-full">
+                  <div className="h-48 relative overflow-hidden bg-slate-200">
+                    {post.image_url ? (
+                      <img src={post.image_url} alt={post.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
+                    ) : (
+                      <div className={`w-full h-full ${post.color_class || 'bg-slate-800'}`} />
+                    )}
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition"></div>
+                    <div className="absolute bottom-4 left-4">
+                      <span className="bg-white/90 backdrop-blur text-slate-900 text-[10px] font-bold px-2 py-1 rounded shadow-sm">
+                        {post.category}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-6 flex flex-col flex-1">
+                    <h3 className="font-bold text-lg mb-3 leading-snug text-slate-800 group-hover:text-blue-600 transition">
+                      {post.title}
+                    </h3>
+                    <p className="text-slate-500 text-sm line-clamp-2 mb-4 flex-1 font-light">
+                      {post.desc_text}
+                    </p>
+                    <div className="flex items-center justify-between text-xs text-slate-400 pt-4 border-t border-slate-50">
+                      <span>{post.date_text}</span>
+                      <span className="flex items-center gap-1 group-hover:translate-x-1 transition text-blue-600 font-bold">
+                        Read More <ChevronRight className="w-3 h-3" />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
-      {/* 5. 하단 CTA */}
+      {/* 4. 하단 CTA */}
       <section className="py-24 px-4 bg-white">
         <div className="max-w-4xl mx-auto bg-gradient-to-br from-slate-900 to-blue-900 rounded-3xl p-10 md:p-16 text-center text-white shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
           <div className="relative z-10">
             <h2 className="text-3xl md:text-4xl font-bold mb-6">내 견적서는 안전할까요?</h2>
             <p className="text-blue-200 mb-8 text-lg">
-              지금 보고 계신 견적서가 적정한지 무료로 분석해 드립니다.<br className="hidden md:block" />
-              상담 목적 외에는 절대 사용하지 않으니 안심하세요.
+              지금 보고 계신 견적서가 적정한지 무료로 분석해 드립니다.
             </p>
             <Link href="/consult" className="inline-flex items-center gap-2 bg-white text-blue-900 font-bold px-10 py-4 rounded-xl hover:bg-blue-50 transition shadow-lg text-lg">
               <FileText className="w-5 h-5" />
@@ -148,19 +192,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 6. 푸터 */}
+      {/* 5. 푸터 */}
       <footer className="bg-slate-50 border-t border-slate-200 py-12 px-4 text-sm">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between gap-8 text-slate-500">
           <div>
             <div className="flex items-center gap-2 font-bold text-xl text-slate-900 mb-4">
-              <Car className="w-5 h-5" />
-              <span>CARENS</span>
+              <span className="font-bold">CARENS</span>
             </div>
             <p className="font-light">투명하고 합리적인 자동차 생활의 기준</p>
           </div>
           <div className="flex flex-col gap-1 text-right">
             <span className="font-bold text-slate-900">Contact Us</span>
-            <span>대표: 더바론 | 사업자번호: 000-00-00000</span>
             <span>contact@carens.com</span>
           </div>
         </div>

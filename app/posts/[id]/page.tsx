@@ -1,91 +1,149 @@
 import Link from "next/link";
-import { ChevronLeft, Calendar, User, FileText } from "lucide-react";
-import { supabase } from "@/lib/supabase"; // DB 연결
+import { supabase } from "@/lib/supabase";
+import { ArrowLeft, Calendar, User, Clock, ChevronRight } from "lucide-react";
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-// DB에서 글 하나 가져오는 함수
-async function getPost(id: string) {
-  const { data: post } = await supabase.from('posts').select('*').eq('id', id).single();
-  return post;
-}
+export const revalidate = 0;
 
-// 1. SEO 최적화 (DB 데이터 사용)
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+type Props = {
+  params: Promise<{ id: string }>;
+};
+
+// ✅ [SEO 핵심] 동적 메타데이터 생성 함수
+// 이 함수가 있어야 검색 엔진이 글 제목과 설명을 읽어갑니다.
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const post = await getPost(id);
+  
+  // DB에서 글 정보 미리 가져오기
+  const { data: post } = await supabase
+    .from('posts')
+    .select('title, desc_text') // 제목과 요약만 가져옴
+    .eq('id', id)
+    .single();
 
   if (!post) {
-    return { title: "존재하지 않는 글" };
+    return {
+      title: "글을 찾을 수 없습니다",
+    };
   }
 
-  // 본문에서 HTML 태그 제거하고 설명 만들기
-  const plainText = post.content ? post.content.replace(/<[^>]*>?/gm, '') : "";
-
   return {
-    title: `${post.title} | CARENS 장기렌트 인사이트`,
-    description: plainText.slice(0, 140) + "...",
+    title: `${post.title} | CARENS`, // 탭 이름: "글 제목 | CARENS"
+    description: post.desc_text,     // 검색 설명: 글 요약 내용
     openGraph: {
       title: post.title,
-      description: plainText.slice(0, 100),
+      description: post.desc_text,
       type: "article",
-    }
+    },
   };
 }
 
-// 2. 상세 페이지 화면
-export default async function PostDetail({ params }: { params: Promise<{ id: string }> }) {
+export default async function PostDetail({ params }: Props) {
   const { id } = await params;
-  const post = await getPost(id);
 
-  if (!post) {
-    return (
-      <div className="min-h-screen flex items-center justify-center flex-col gap-4">
-        <h1 className="text-2xl font-bold">존재하지 않는 글입니다.</h1>
-        <Link href="/" className="text-blue-600 hover:underline">홈으로 돌아가기</Link>
-      </div>
-    );
+  // 1. 현재 보고 있는 글 가져오기
+  const { data: post, error } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error || !post) {
+    notFound();
   }
 
+  // 2. 다른 추천 글 3개 가져오기 (현재 글 제외)
+  const { data: recentPosts } = await supabase
+    .from('posts')
+    .select('*')
+    .neq('id', id) 
+    .order('id', { ascending: false })
+    .limit(3);
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans">
-      {/* 상단 네비게이션 */}
-      <header className="border-b border-slate-200 sticky top-0 bg-white/90 backdrop-blur z-50">
-        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-1 text-slate-500 hover:text-blue-600 transition font-medium text-sm">
-            <ChevronLeft className="w-4 h-4" /> 목록으로
-          </Link>
-          <Link href="/consult" className="text-blue-600 font-bold text-sm bg-blue-50 px-3 py-1.5 rounded-full hover:bg-blue-100 transition border border-blue-100">
-            내 견적 무료 진단
-          </Link>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-white font-sans text-slate-800">
+      
       {/* 본문 영역 */}
-      <main className="max-w-3xl mx-auto px-4 py-12 bg-white shadow-sm min-h-screen">
-        <div className="mb-10 border-b border-slate-100 pb-8">
-          <div className="flex gap-2 mb-4">
-            <span className="inline-block bg-blue-600 text-white text-[11px] font-bold px-2 py-1 rounded shadow-sm">{post.category}</span>
+      <article className="max-w-4xl mx-auto px-4 py-10">
+        
+        {/* 카테고리 태그 */}
+        <div className="mb-6">
+           <span className="inline-block bg-blue-100 text-blue-700 font-bold px-4 py-1.5 rounded-full text-sm hover:bg-blue-200 transition cursor-pointer">
+            {post.category}
+          </span>
+        </div>
+
+        {/* 제목 */}
+        <h1 className="text-3xl md:text-5xl font-extrabold mb-6 leading-tight text-slate-900">
+          {post.title}
+        </h1>
+
+        {/* 작성일 / 정보 */}
+        <div className="flex items-center gap-4 text-slate-400 text-sm mb-10 border-b border-slate-100 pb-8">
+          <div className="flex items-center gap-1">
+            <Calendar className="w-4 h-4" />
+            {post.date_text}
           </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold mb-6 leading-tight text-slate-900 break-keep tracking-tight">{post.title}</h1>
-          <div className="flex items-center gap-4 text-xs md:text-sm text-slate-400">
-            <div className="flex items-center gap-1"><User className="w-4 h-4 text-slate-400" /><span className="font-bold text-slate-700">에디터 카렌스</span></div>
-            <div className="flex items-center gap-1"><Calendar className="w-4 h-4 text-slate-400" /><span>{post.date_text}</span></div>
+          <div className="flex items-center gap-1">
+            <User className="w-4 h-4" />
+            에디터 더바론
           </div>
         </div>
 
-        {/* 본문 (HTML 적용) */}
-        <article className="prose prose-lg prose-slate max-w-none text-slate-700 leading-relaxed space-y-8 break-keep" dangerouslySetInnerHTML={{ __html: post.content }} />
-          
-        <hr className="border-slate-200 my-16" />
+        {/* 메인 이미지 */}
+        {post.image_url && (
+          <div className="rounded-2xl overflow-hidden mb-12 shadow-lg">
+            <img src={post.image_url} alt={post.title} className="w-full h-auto object-cover max-h-[500px]"/>
+          </div>
+        )}
 
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-8 text-center border border-blue-100 shadow-inner">
-          <h3 className="text-2xl font-bold mb-3 text-slate-900">내 견적서는 안전할까요?</h3>
-          <p className="text-slate-600 mb-8">전문가가 무료로 분석해 드립니다.</p>
-          <Link href="/consult" className="inline-flex items-center gap-2 bg-blue-600 text-white font-bold px-8 py-4 rounded-xl hover:bg-blue-700 transition shadow-lg hover:-translate-y-1">
-            <FileText className="w-5 h-5" /> 무료 견적 진단 신청하기
+        {/* 본문 내용 (HTML 적용) */}
+        <div className="prose prose-lg max-w-none text-slate-700 leading-8">
+          {/* 요약문 강조 */}
+          <p className="text-xl font-medium text-slate-900 mb-8 p-6 bg-slate-50 rounded-xl border-l-4 border-blue-500">
+            {post.desc_text}
+          </p>
+          
+          {/* SEO HTML 본문 */}
+          {post.content ? (
+            <div dangerouslySetInnerHTML={{ __html: post.content }} />
+          ) : (
+            <p className="text-center py-10 text-slate-400">본문 내용을 불러오는 중입니다.</p>
+          )}
+        </div>
+      </article>
+
+      {/* 다른 글 목록 */}
+      <section className="bg-slate-50 py-16 mt-10 border-t border-slate-200">
+        <div className="max-w-4xl mx-auto px-4">
+          <h3 className="text-2xl font-bold mb-8 text-slate-900">함께 읽으면 좋은 글</h3>
+          <div className="grid md:grid-cols-3 gap-6">
+            {recentPosts?.map((item: any) => (
+              <Link href={`/posts/${item.id}`} key={item.id} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition group">
+                <div className="h-40 relative bg-slate-200">
+                  {item.image_url && <img src={item.image_url} className="w-full h-full object-cover" />}
+                  <span className="absolute top-2 left-2 bg-white/90 text-xs font-bold px-2 py-1 rounded">{item.category}</span>
+                </div>
+                <div className="p-4">
+                  <h4 className="font-bold text-slate-900 line-clamp-2 group-hover:text-blue-600 transition">{item.title}</h4>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 하단 CTA */}
+      <section className="bg-slate-900 text-white py-16">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h3 className="text-2xl font-bold mb-4">이 정보가 도움이 되셨나요?</h3>
+          <p className="text-slate-400 mb-8">내 견적서도 안전한지 무료로 확인해보세요.</p>
+          <Link href="/consult" className="inline-block bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-10 rounded-xl transition shadow-lg shadow-blue-900/50">
+            전문가 무료 진단 신청
           </Link>
         </div>
-      </main>
+      </section>
     </div>
   );
 }
