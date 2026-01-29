@@ -63,7 +63,7 @@ export default async function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/consult" className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-500 transition shadow-lg shadow-blue-900/50 flex items-center justify-center gap-2">
               <Calculator className="w-5 h-5" />
-              무료 견적 분석 신청
+              -무료 견적 분석 신청-
             </Link>
           </div>
         </div>
