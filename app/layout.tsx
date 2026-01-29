@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import { Car, ArrowRight } from "lucide-react";
+import Script from "next/script"; // ✅ 추가
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,8 +19,33 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
+      <head>
+        {/* ✅ [추가] Google Tag Manager - Script 태그 */}
+        <Script
+          id="gtm-script"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+              new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+              j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+              'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+              })(window,document,'script','dataLayer','GTM-TZ7J7B5T');
+            `,
+          }}
+        />
+      </head>
       <body className={inter.className}>
-        {/* ✅ GNB (헤더): 여기서 한 번만 선언하면 모든 페이지에 뜹니다 */}
+        {/* ✅ [추가] Google Tag Manager (noscript) - JS가 꺼진 환경용 */}
+        <noscript>
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GTM-TZ7J7B5T"
+            height="0"
+            width="0"
+            style={{ display: "none", visibility: "hidden" }}
+          />
+        </noscript>
+
         <header className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all duration-300">
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2 group">
@@ -34,7 +60,6 @@ export default function RootLayout({
           </div>
         </header>
 
-        {/* 페이지 내용이 들어가는 곳 (헤더에 가려지지 않게 여백 추가) */}
         <main className="pt-16 min-h-screen bg-slate-50">
           {children}
         </main>
