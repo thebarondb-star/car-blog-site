@@ -3,31 +3,51 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase'; 
 import * as XLSX from 'xlsx';
+import { useRouter } from 'next/navigation'; // 이동 기능 추가
 
 export default function AdminInbox() {
+  const router = useRouter();
   const [list, setList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 1. 데이터 가져오기 (테이블 이름 수정됨: customer_consults)
+  // ★ [검문소] 관리자 권한 확인
+  useEffect(() => {
+    const checkAuth = () => {
+      const isAdmin = localStorage.getItem('admin_session');
+      // 입장권이 없으면 로그인 페이지로 쫓아냄
+      if (!isAdmin) {
+        router.push('/admin/login');
+      }
+    };
+    checkAuth();
+  }, [router]);
+
+  // 데이터 불러오기
   useEffect(() => {
     const fetchData = async () => {
-      const { data, error } = await supabase
-        .from('customer_consults') // ★ 여기가 핵심! 아까 만든 테이블로 변경
-        .select('*')
-        .order('created_at', { ascending: false }); // 최신순
+      // 권한이 없으면 데이터 요청도 하지 않음
+      if (!localStorage.getItem('admin_session')) return;
 
-      if (error) {
-        console.error('데이터 에러:', error);
-      } else {
-        setList(data || []);
-      }
+      const { data, error } = await supabase
+        .from('customer_consults') 
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) console.error(error);
+      else setList(data || []);
+      
       setLoading(false);
     };
 
     fetchData();
   }, []);
 
-  // 2. 엑셀 다운로드
+  // 로그아웃 기능
+  const handleLogout = () => {
+    localStorage.removeItem('admin_session'); // 입장권 찢기
+    router.push('/admin/login');
+  };
+
   const downloadExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(list);
     const workbook = XLSX.utils.book_new();
@@ -35,18 +55,26 @@ export default function AdminInbox() {
     XLSX.writeFile(workbook, `상담리스트_${new Date().toLocaleDateString()}.xlsx`);
   };
 
-  if (loading) return <div className="p-10 text-center">데이터를 불러오는 중...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center">보안 확인 중...</div>;
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">관리자 상담 접수함 ({list.length}건)</h1>
-        <button 
-          onClick={downloadExcel}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold transition flex items-center gap-2"
-        >
-          📥 엑셀 다운로드
-        </button>
+        <h1 className="text-2xl font-bold text-gray-800">🔐 관리자 상담 접수함 ({list.length}건)</h1>
+        <div className="flex gap-3">
+           <button 
+            onClick={handleLogout}
+            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-bold text-sm transition"
+          >
+            로그아웃
+          </button>
+          <button 
+            onClick={downloadExcel}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold transition flex items-center gap-2"
+          >
+            📥 엑셀 저장
+          </button>
+        </div>
       </div>
 
       <div className="bg-white shadow rounded-lg overflow-hidden border">
@@ -59,7 +87,7 @@ export default function AdminInbox() {
               <th className="p-3">연락처</th>
               <th className="p-3">차종</th>
               <th className="p-3 w-1/3">문의내용</th>
-              <th className="p-3">첨부사진</th>
+              <th className="p-3">첨부</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -84,9 +112,9 @@ export default function AdminInbox() {
                     <a 
                       href={item.image_url} 
                       target="_blank" 
-                      className="inline-flex items-center gap-1 text-xs bg-gray-100 px-2 py-1 rounded border hover:bg-gray-200 hover:text-blue-600 transition"
+                      className="text-xs bg-gray-100 px-2 py-1 rounded border hover:bg-gray-200"
                     >
-                      📷 사진보기
+                      📷 보기
                     </a>
                   ) : (
                     <span className="text-gray-300 text-xs">-</span>
@@ -94,13 +122,6 @@ export default function AdminInbox() {
                 </td>
               </tr>
             ))}
-            {list.length === 0 && (
-              <tr>
-                <td colSpan={7} className="p-10 text-center text-gray-400">
-                  아직 접수된 상담 내역이 없습니다.
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>
