@@ -10,15 +10,13 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
-// ✅ [SEO 핵심] 동적 메타데이터 생성 함수
-// 이 함수가 있어야 검색 엔진이 글 제목과 설명을 읽어갑니다.
+// ✅ [수정됨] 탭 이름이 'Dr.Rent'로 나오도록 변경
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   
-  // DB에서 글 정보 미리 가져오기
   const { data: post } = await supabase
     .from('posts')
-    .select('title, desc_text') // 제목과 요약만 가져옴
+    .select('title, desc_text')
     .eq('id', id)
     .single();
 
@@ -29,8 +27,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   return {
-    title: `${post.title} | CARENS`, // 탭 이름: "글 제목 | CARENS"
-    description: post.desc_text,     // 검색 설명: 글 요약 내용
+    title: `${post.title} | Dr.Rent`, // 탭 제목 수정
+    description: post.desc_text,
     openGraph: {
       title: post.title,
       description: post.desc_text,
@@ -53,7 +51,7 @@ export default async function PostDetail({ params }: Props) {
     notFound();
   }
 
-  // 2. 다른 추천 글 3개 가져오기 (현재 글 제외)
+  // 2. 다른 추천 글 3개 가져오기
   const { data: recentPosts } = await supabase
     .from('posts')
     .select('*')
@@ -87,7 +85,8 @@ export default async function PostDetail({ params }: Props) {
           </div>
           <div className="flex items-center gap-1">
             <User className="w-4 h-4" />
-            에디터 더바론
+            {/* ✅ [수정됨] 에디터 이름 변경 */}
+            에디터 닥터리
           </div>
         </div>
 

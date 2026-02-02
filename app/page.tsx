@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 
 export const revalidate = 0; 
 
-// 1. 카테고리 목록을 DB에서 자동으로 가져오기 (하드코딩 제거)
+// 1. 카테고리 목록을 DB에서 자동으로 가져오기
 async function getCategories() {
   const { data } = await supabase
     .from('posts')
@@ -12,7 +12,6 @@ async function getCategories() {
   
   if (!data) return ["전체"];
 
-  // 중복 제거 (Set 사용)
   const uniqueCategories = Array.from(new Set(data.map(item => item.category)));
   return ["전체", ...uniqueCategories];
 }
@@ -41,7 +40,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
   const params = await searchParams;
   const selectedCategory = params.category || "전체";
 
-  // 병렬로 데이터 가져오기 (속도 향상)
   const [categories, posts] = await Promise.all([
     getCategories(),
     getPosts(selectedCategory)
@@ -105,10 +103,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
         <div className="max-w-6xl mx-auto">
           
           <div className="mb-10">
-            <h2 className="text-3xl font-bold text-slate-900 mb-2">CARENS INSIGHT</h2>
+            {/* ✅ [수정됨] CARENS INSIGHT -> Dr.Rent INSIGHT */}
+            <h2 className="text-3xl font-bold text-slate-900 mb-2">Dr.Rent INSIGHT</h2>
             <p className="text-slate-500 mb-8">호갱 탈출을 위한 필수 지식과 노하우</p>
 
-            {/* ✅ 자동 생성된 카테고리 버튼들 */}
             <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
               {categories.map((category) => (
                 <Link
@@ -197,13 +195,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between gap-8 text-slate-500">
           <div>
             <div className="flex items-center gap-2 font-bold text-xl text-slate-900 mb-4">
-              <span className="font-bold">CARENS</span>
+              {/* ✅ [수정됨] CARENS -> Dr.Rent */}
+              <span className="font-bold text-blue-900">Dr.Rent</span>
             </div>
             <p className="font-light">투명하고 합리적인 자동차 생활의 기준</p>
           </div>
           <div className="flex flex-col gap-1 text-right">
             <span className="font-bold text-slate-900">Contact Us</span>
-            <span>contact@carens.com</span>
+            {/* ✅ [수정됨] 이메일 주소 변경 */}
+            <span>dr.rent.go@gmail.com</span>
           </div>
         </div>
       </footer>
