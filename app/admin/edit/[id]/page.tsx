@@ -59,7 +59,6 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
     if (mode === "visual" && editorRef.current) editorRef.current.innerHTML = formData.content;
   }, [mode]);
 
-  // ✨ [핵심 수정] 커서 위치를 실시간으로 저장
   const updateCursorPosition = () => {
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
@@ -83,9 +82,15 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
     } catch (err: any) { alert(err.message); } finally { setUploadingThumbnail(false); }
   };
 
+  // ✨ [핵심 수정] 사진 선택 시 Alt 태그 입력받기
   const handleBodyImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       if (!e.target.files || e.target.files.length === 0) return;
+
+      // 1. Alt 태그 입력받기
+      const altText = prompt("이미지 설명을 입력하세요 (검색엔진 노출용):", "사진 설명");
+      if (altText === null) return;
+
       setUploadingBody(true);
 
       const file = e.target.files[0];
@@ -95,10 +100,11 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
       if (error) throw error;
       const { data } = supabase.storage.from("consult_photos").getPublicUrl(filePath);
       
+      // 2. 입력받은 altText를 HTML 태그에 적용
       const imgTag = `
         <figure class="my-8 text-center">
-          <img src="${data.publicUrl}" alt="첨부이미지" class="w-full rounded-xl shadow-md inline-block" />
-          <figcaption class="mt-2 text-sm text-slate-500 font-medium">▲ 사진 설명을 입력하세요</figcaption>
+          <img src="${data.publicUrl}" alt="${altText}" class="w-full rounded-xl shadow-md inline-block" />
+          <figcaption class="mt-2 text-sm text-slate-500 font-medium">▲ ${altText}</figcaption>
         </figure>
         <div class="my-4"><br></div> 
       `;
@@ -157,7 +163,6 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
           </div>
           <hr className="border-slate-100" />
 
-          {/* 에디터 툴바 */}
           <div className="relative">
             <div className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-100 py-4 flex justify-between items-center mb-4">
               <label className="block text-sm font-bold text-slate-700">본문 수정</label>
@@ -177,7 +182,6 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
               <div 
                 ref={editorRef} 
                 contentEditable 
-                // ✨ [핵심 수정] 실시간 위치 저장
                 onKeyUp={updateCursorPosition}
                 onClick={updateCursorPosition}
                 onBlur={updateCursorPosition}
@@ -185,7 +189,7 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
                 className="w-full min-h-[500px] p-6 rounded-xl border border-slate-200 prose prose-slate max-w-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
                 style={{ lineHeight: "1.8" }} 
               />
-              <p className="text-xs text-slate-400 mt-2 text-right">💡 커서가 깜빡이는 곳에 사진이 들어갑니다.</p>
+              <p className="text-xs text-slate-400 mt-2 text-right">💡 사진을 넣을 때 설명을 입력하면 검색엔진(SEO)에 도움이 됩니다.</p>
             </div>
 
             <div className={mode === "html" ? "block" : "hidden"}>

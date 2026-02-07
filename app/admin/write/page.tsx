@@ -15,8 +15,6 @@ export default function AdminWrite() {
   const [mode, setMode] = useState<"visual" | "html">("visual");
   const editorRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  
-  // ✨ [핵심] 커서 위치를 항상 기억할 저장소
   const savedRange = useRef<Range | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -49,7 +47,6 @@ export default function AdminWrite() {
     }
   }, [mode]);
 
-  // ✨ [핵심 수정] 글을 쓰거나 클릭할 때마다 커서 위치를 실시간으로 저장
   const updateCursorPosition = () => {
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
@@ -73,9 +70,15 @@ export default function AdminWrite() {
     } catch (error: any) { alert(error.message); } finally { setUploadingThumbnail(false); }
   };
 
+  // ✨ [핵심 수정] 사진 선택 시 Alt 태그 입력받기
   const handleBodyImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       if (!e.target.files || e.target.files.length === 0) return;
+
+      // 1. 파일 선택 직후, 사용자에게 설명을 물어봅니다.
+      const altText = prompt("이미지 설명을 입력하세요 (검색엔진 노출용):", "사진 설명");
+      if (altText === null) return; // 취소 누르면 업로드 안 함
+
       setUploadingBody(true);
 
       const file = e.target.files[0];
@@ -85,16 +88,16 @@ export default function AdminWrite() {
       if (error) throw error;
       const { data } = supabase.storage.from("consult_photos").getPublicUrl(filePath);
       
+      // 2. 입력받은 altText를 HTML에 넣습니다.
       const imgTag = `
         <figure class="my-8 text-center">
-          <img src="${data.publicUrl}" alt="첨부이미지" class="w-full rounded-xl shadow-md inline-block" />
-          <figcaption class="mt-2 text-sm text-slate-500 font-medium">▲ 사진 설명을 입력하세요</figcaption>
+          <img src="${data.publicUrl}" alt="${altText}" class="w-full rounded-xl shadow-md inline-block" />
+          <figcaption class="mt-2 text-sm text-slate-500 font-medium">▲ ${altText}</figcaption>
         </figure>
         <div class="my-4"><br></div> 
       `;
 
       if (mode === "visual") {
-        // ✨ 저장해둔 마지막 위치(savedRange) 사용
         if (savedRange.current) {
           savedRange.current.deleteContents();
           const div = document.createElement("div");
@@ -103,7 +106,6 @@ export default function AdminWrite() {
           savedRange.current.collapse(false);
           handleVisualInput();
         } else {
-          // 혹시라도 저장된 게 없으면 맨 뒤에 추가
           if (editorRef.current) {
             editorRef.current.innerHTML += imgTag;
             handleVisualInput();
@@ -161,7 +163,6 @@ export default function AdminWrite() {
           </div>
           <hr className="border-slate-100" />
 
-          {/* 에디터 툴바 */}
           <div className="relative">
             <div className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-100 py-4 flex justify-between items-center mb-4">
               <label className="block text-sm font-bold text-slate-700">본문 작성</label>
@@ -181,7 +182,6 @@ export default function AdminWrite() {
               <div 
                 ref={editorRef} 
                 contentEditable 
-                // ✨ [핵심 수정] 키보드 입력, 마우스 클릭, 포커스 아웃 때마다 커서 위치 저장
                 onKeyUp={updateCursorPosition}
                 onClick={updateCursorPosition}
                 onBlur={updateCursorPosition}
@@ -189,7 +189,7 @@ export default function AdminWrite() {
                 className="w-full min-h-[500px] p-6 rounded-xl border border-slate-200 prose prose-slate max-w-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
                 style={{ lineHeight: "1.8" }} 
               />
-              <p className="text-xs text-slate-400 mt-2 text-right">💡 커서가 깜빡이는 곳에 사진이 들어갑니다.</p>
+              <p className="text-xs text-slate-400 mt-2 text-right">💡 사진을 넣을 때 설명을 입력하면 검색엔진(SEO)에 도움이 됩니다.</p>
             </div>
 
             <div className={mode === "html" ? "block" : "hidden"}>
