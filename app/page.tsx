@@ -4,16 +4,10 @@ import { supabase } from "@/lib/supabase";
 
 export const revalidate = 0; 
 
-// 1. 카테고리 목록을 DB에서 자동으로 가져오기
+// 1. 카테고리 목록 (★ 순서 고정)
+// DB에서 가져오지 않고, 원하시는 순서대로 직접 지정했습니다.
 async function getCategories() {
-  const { data } = await supabase
-    .from('posts')
-    .select('category');
-  
-  if (!data) return ["전체"];
-
-  const uniqueCategories = Array.from(new Set(data.map(item => item.category)));
-  return ["전체", ...uniqueCategories];
+  return ["전체", "닥터렌트는?", "호갱탈출", "장기렌트정보"];
 }
 
 // 2. 글 목록 가져오기
@@ -40,10 +34,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
   const params = await searchParams;
   const selectedCategory = params.category || "전체";
 
-  const [categories, posts] = await Promise.all([
-    getCategories(),
-    getPosts(selectedCategory)
-  ]);
+  // 카테고리는 이제 고정된 리스트를 바로 사용합니다.
+  const categories = await getCategories();
+  const posts = await getPosts(selectedCategory);
 
   return (
     <div className="font-sans text-slate-800">
@@ -66,10 +59,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
             딜러 수당 거품 뺀<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">진짜 원가 견적</span>을 공개합니다
           </h1>
+          
+          {/* 에러 수정됨: p 태그 안에 p 태그 삭제 -> br 태그 사용 */}
           <p className="text-slate-400 mb-10 text-lg md:text-xl max-w-2xl mx-auto font-light">
             아직도 월 렌탈료만 보고 계약하시나요?<br />
             현직 전문가가 분석한 <span className="text-white font-medium">투명한 견적 리포트</span>를 무료로 받아보세요.
+            <br className="my-2 block" />
+            <span className="block mt-2">견적 의뢰 한 번만 해도 고객님의 지갑을 지킬 수 있습니다.</span>
           </p>
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/consult" className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-500 transition shadow-lg shadow-blue-900/50 flex items-center justify-center gap-2">
               <Calculator className="w-5 h-5" />
@@ -103,7 +101,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
         <div className="max-w-6xl mx-auto">
           
           <div className="mb-10">
-            {/* ✅ [수정됨] CARENS INSIGHT -> Dr.Rent INSIGHT */}
             <h2 className="text-3xl font-bold text-slate-900 mb-2">Dr.Rent INSIGHT</h2>
             <p className="text-slate-500 mb-8">호갱 탈출을 위한 필수 지식과 노하우</p>
 
@@ -195,14 +192,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between gap-8 text-slate-500">
           <div>
             <div className="flex items-center gap-2 font-bold text-xl text-slate-900 mb-4">
-              {/* ✅ [수정됨] CARENS -> Dr.Rent */}
               <span className="font-bold text-blue-900">Dr.Rent</span>
             </div>
             <p className="font-light">투명하고 합리적인 자동차 생활의 기준</p>
           </div>
           <div className="flex flex-col gap-1 text-right">
             <span className="font-bold text-slate-900">Contact Us</span>
-            {/* ✅ [수정됨] 이메일 주소 변경 */}
             <span>dr.rent.go@gmail.com</span>
           </div>
         </div>
