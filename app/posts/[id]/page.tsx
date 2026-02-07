@@ -12,13 +12,13 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
-// SEO 메타데이터 생성
+// ✨ [핵심 수정] SEO 및 썸네일(Open Graph) 완벽 설정
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   
   const { data: post } = await supabase
     .from('posts')
-    .select('title, desc_text')
+    .select('title, desc_text, image_url') // image_url 필수
     .eq('id', id)
     .single();
 
@@ -29,12 +29,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   return {
+    // 1. 브라우저 탭 이름 (검색 결과 제목)
     title: `${post.title} | Dr.Rent`, 
+    
+    // 2. 검색 결과 설명 (요약글)
     description: post.desc_text,
+
+    // 3. 카카오톡/페이스북 공유 설정 (Open Graph)
     openGraph: {
       title: post.title,
       description: post.desc_text,
       type: "article",
+      url: `/posts/${id}`,
+      // ✨ 여기가 핵심! 썸네일 이미지를 강제로 지정
+      images: post.image_url ? [post.image_url] : [], 
+    },
+
+    // 4. 트위터/X 공유 설정
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.desc_text,
+      images: post.image_url ? [post.image_url] : [],
     },
   };
 }
@@ -89,8 +105,6 @@ export default async function PostDetail({ params }: Props) {
             에디터 닥터리 
           </div>
         </div>
-
-        {/* ❌ [삭제됨] 여기에 있던 '메인 이미지(썸네일)' 코드를 완전히 제거했습니다. */}
 
         {/* 본문 내용 (뷰어 컴포넌트) */}
         {post.content ? (
