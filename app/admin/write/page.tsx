@@ -1,253 +1,209 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { Save, Loader2, Image as ImageIcon, PlusCircle } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { ArrowLeft, Save, Upload, Loader2 } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
 
-// 자주 쓰는 카테고리 추천 목록
-const SUGGESTED_CATEGORIES = ["필독", "사업자", "신용", "꿀팁", "사고", "분석", "승인", "전기차", "비교", "경고"];
+// ✅ [수정됨] 카테고리 목록을 새 이름과 순서로 고정!
+const CATEGORIES = ["닥터렌트는?", "호갱탈출", "장기렌트정보"];
 
-export default function AdminWrite() {
+export default function WritePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [uploadingBodyParams, setUploadingBody] = useState(false); // 본문 이미지 업로드 중 상태
-  
-  // 썸네일용 상태
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState("");
-  
+  const [uploading, setUploading] = useState(false);
+
+  // 입력값 상태 관리
   const [formData, setFormData] = useState({
-    password: "",
     title: "",
-    category: "",
+    category: CATEGORIES[0], // 기본값: 첫 번째 카테고리
     desc_text: "",
-    content: ""
+    content: "",
+    image_url: "",
   });
 
-  const handleChange = (e: any) => {
+  // 텍스트 입력 핸들러
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // 1. 썸네일 선택
-  const handleFileChange = (e: any) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setPreview(URL.createObjectURL(selectedFile));
-    }
-  };
-
-  // 2. [핵심] 본문 중간에 사진 넣기 (자동 태그 삽입)
-  const handleBodyImageUpload = async (e: any) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-
-    setUploadingBody(true);
-
+  // 이미지 업로드 핸들러
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `body_${Date.now()}.${fileExt}`;
+      setUploading(true);
+      if (!e.target.files || e.target.files.length === 0) return;
 
-      // 업로드
+      const file = e.target.files[0];
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `posts/${fileName}`;
+
+      // Supabase 스토리지에 업로드
       const { error: uploadError } = await supabase.storage
-        .from('consult_photos') 
-        .upload(fileName, selectedFile);
+        .from("images")
+        .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      // 주소 가져오기
-      const { data: { publicUrl } } = supabase.storage
-        .from('consult_photos')
-        .getPublicUrl(fileName);
-
-      // 본문에 HTML 태그 자동으로 추가 (줄바꿈 + 이미지 + 줄바꿈)
-      const imgTag = `\n<br>\n<img src="${publicUrl}" alt="본문이미지" class="w-full rounded-xl shadow-md my-4" />\n<br>\n`;
+      // 이미지 주소 가져오기
+      const { data } = supabase.storage.from("images").getPublicUrl(filePath);
       
-      setFormData(prev => ({
-        ...prev,
-        content: prev.content + imgTag
-      }));
-
-      alert("본문에 사진이 추가되었습니다!");
-
-    } catch (error: any) {
-      alert("사진 추가 실패: " + error.message);
+      setFormData((prev) => ({ ...prev, image_url: data.publicUrl }));
+    } catch (error) {
+      alert("이미지 업로드 실패!");
+      console.error(error);
     } finally {
-      setUploadingBody(false);
-      // 같은 파일 다시 선택 가능하게 초기화
-      e.target.value = null;
+      setUploading(false);
     }
   };
 
-  // 3. 최종 발행
-  const handleSubmit = async (e: any) => {
+  // 저장 핸들러
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (formData.password !== "dlrns6632!") {
-      alert("비밀번호가 틀렸습니다.");
+    if (!formData.title || !formData.content) {
+      alert("제목과 내용을 입력해주세요.");
       return;
     }
-
-    if (!formData.title || !formData.content || !formData.category) {
-      alert("제목, 카테고리, 내용은 필수입니다.");
-      return;
-    }
-
-    if (!confirm("발행하시겠습니까?")) return;
-
-    setLoading(true);
 
     try {
-      let imageUrl = "";
+      setLoading(true);
 
-      // 썸네일 업로드
-      if (file) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `thumb_${Date.now()}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('consult_photos') 
-          .upload(fileName, file);
+      // 날짜 포맷 (YYYY-MM-DD)
+      const dateText = new Date().toISOString().split("T")[0];
 
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('consult_photos')
-          .getPublicUrl(fileName);
-          
-        imageUrl = publicUrl;
-      }
-
-      const today = new Date();
-      const dateText = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
-
-      // DB 저장
-      const { error } = await supabase
-        .from('posts')
-        .insert([
-          {
-            title: formData.title,
-            category: formData.category,
-            desc_text: formData.desc_text,
-            content: formData.content,
-            date_text: dateText,
-            image_url: imageUrl,
-            color_class: "bg-slate-800"
-          }
-        ]);
+      const { error } = await supabase.from("posts").insert([
+        {
+          title: formData.title,
+          category: formData.category, // 선택된 카테고리 저장
+          desc_text: formData.desc_text,
+          content: formData.content, // HTML 내용 (줄바꿈 포함)
+          image_url: formData.image_url,
+          date_text: dateText,
+        },
+      ]);
 
       if (error) throw error;
 
-      alert("발행 성공!");
-      router.push("/");
-
-    } catch (error: any) {
-      console.error("에러:", error);
-      alert("실패: " + error.message);
+      alert("글이 성공적으로 등록되었습니다!");
+      router.push("/admin"); // 목록으로 이동
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+      alert("저장 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto py-12 px-4 bg-slate-50 min-h-screen">
-      <h1 className="text-3xl font-bold mb-8">🔐 관리자 글쓰기 v2</h1>
-      
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-        
-        {/* 비밀번호 */}
-        <div>
-          <label className="block font-bold mb-2">관리자 비밀번호</label>
-          <input type="password" name="password" value={formData.password} onChange={handleChange} className="w-full border p-3 rounded-lg" placeholder="1234" />
+    <div className="min-h-screen bg-slate-50 p-6 md:p-10">
+      <div className="max-w-4xl mx-auto">
+        {/* 상단 헤더 */}
+        <div className="flex items-center justify-between mb-8">
+          <Link href="/admin" className="flex items-center text-slate-500 hover:text-slate-900 transition font-medium">
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            목록으로 돌아가기
+          </Link>
+          <h1 className="text-2xl font-bold text-slate-900">새 글 작성하기</h1>
         </div>
 
-        <div className="border-t my-6"></div>
-
-        {/* 카테고리 */}
-        <div>
-          <label className="block font-bold mb-2">카테고리 (직접 입력 가능)</label>
-          <input 
-            list="category-options" 
-            name="category"
-            value={formData.category} 
-            onChange={handleChange}
-            className="w-full border p-3 rounded-lg"
-            placeholder="예: 전기차 (직접 입력하거나 목록 선택)" 
-          />
-          <datalist id="category-options">
-            {SUGGESTED_CATEGORIES.map(cat => <option key={cat} value={cat} />)}
-          </datalist>
-        </div>
-
-        {/* 제목 */}
-        <div>
-          <label className="block font-bold mb-2">제목</label>
-          <input type="text" name="title" value={formData.title} onChange={handleChange} className="w-full border p-3 rounded-lg font-bold" placeholder="제목 입력" />
-        </div>
-
-        {/* 요약문 */}
-        <div>
-          <label className="block font-bold mb-2">요약문</label>
-          <input type="text" name="desc_text" value={formData.desc_text} onChange={handleChange} className="w-full border p-3 rounded-lg" placeholder="리스트용 요약 (1~2줄)" />
-        </div>
-
-        {/* 썸네일 */}
-        <div>
-          <label className="block font-bold mb-2">썸네일 사진 (대표 이미지)</label>
-          <div className="flex items-center gap-4">
-            <input type="file" onChange={handleFileChange} accept="image/*" />
-            {preview && <img src={preview} className="h-20 w-20 object-cover rounded-lg border" />}
-          </div>
-        </div>
-
-        <div className="border-t my-6"></div>
-
-        {/* 본문 (이미지 추가 기능 포함) */}
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <label className="block font-bold">본문 내용</label>
-            
-            {/* ✨ 본문 사진 추가 버튼 ✨ */}
-            <div className="relative">
-              <input 
-                type="file" 
-                id="body-image-upload" 
-                className="hidden" 
-                accept="image/*"
-                onChange={handleBodyImageUpload}
-                disabled={uploadingBodyParams}
-              />
-              <label 
-                htmlFor="body-image-upload"
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold cursor-pointer transition
-                  ${uploadingBodyParams ? "bg-slate-200 text-slate-400" : "bg-blue-100 text-blue-700 hover:bg-blue-200"}`}
-              >
-                {uploadingBodyParams ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
-                {uploadingBodyParams ? "업로드 중..." : "본문에 사진 넣기"}
-              </label>
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-8">
+          
+          {/* 1. 카테고리 선택 (버튼형) */}
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-3">카테고리 선택</label>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setFormData((prev) => ({ ...prev, category: cat }))}
+                  className={`
+                    px-4 py-2 rounded-lg text-sm font-bold transition-all border
+                    ${formData.category === cat
+                      ? "bg-slate-900 text-white border-slate-900 shadow-md transform scale-105"
+                      : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                    }
+                  `}
+                >
+                  {cat}
+                </button>
+              ))}
             </div>
           </div>
-          
-          <p className="text-xs text-slate-500 mb-2">
-            * '본문에 사진 넣기'를 누르면 자동으로 HTML 코드가 추가됩니다.
-          </p>
 
-          <textarea 
-            name="content"
-            value={formData.content}
-            onChange={handleChange}
-            className="w-full border p-3 rounded-lg h-96 font-mono text-sm leading-relaxed"
-            placeholder="<p>내용을 입력하세요...</p>"
-          />
-        </div>
+          {/* 2. 제목 입력 */}
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">제목</label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              placeholder="제목을 입력하세요"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+            />
+          </div>
 
-        <button type="submit" disabled={loading} className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition flex items-center justify-center gap-2">
-          {loading ? <Loader2 className="animate-spin" /> : <><Save /> 발행하기</>}
-        </button>
+          {/* 3. 대표 이미지 업로드 */}
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">대표 이미지</label>
+            <div className="flex items-center gap-4">
+              <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-3 rounded-xl flex items-center gap-2 transition font-medium text-sm">
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                이미지 업로드
+                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              </label>
+              {formData.image_url && (
+                <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-200">
+                  <Image src={formData.image_url} alt="Preview" fill className="object-cover" />
+                </div>
+              )}
+            </div>
+          </div>
 
-      </form>
+          {/* 4. 요약글 입력 */}
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">요약글 (리스트에 노출됨)</label>
+            <textarea
+              name="desc_text"
+              value={formData.desc_text}
+              onChange={handleChange}
+              placeholder="이 글의 핵심 내용을 1-2줄로 요약해주세요."
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition h-24 resize-none"
+            />
+          </div>
+
+          {/* 5. 본문 입력 */}
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">본문 내용 (HTML 가능)</label>
+            <textarea
+              name="content"
+              value={formData.content}
+              onChange={handleChange}
+              placeholder="내용을 입력하세요. (HTML 태그 사용 가능)"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition h-96 font-mono text-sm leading-relaxed"
+            />
+            <p className="text-xs text-slate-400 mt-2 text-right">💡 Tip: &lt;br&gt; 태그로 줄바꿈을 할 수 있습니다.</p>
+          </div>
+
+          {/* 저장 버튼 */}
+          <div className="pt-4 border-t border-slate-100 flex justify-end">
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+              글 발행하기
+            </button>
+          </div>
+
+        </form>
+      </div>
     </div>
   );
 }
