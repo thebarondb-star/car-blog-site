@@ -4,7 +4,7 @@ import { Calendar, User } from "lucide-react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import AdminPostControls from "@/components/AdminPostControls";
-import PostContent from "@/components/PostContent"; // ✅ [추가됨] 새로 만든 뷰어 가져오기
+import PostContent from "@/components/PostContent"; 
 
 export const revalidate = 0;
 
@@ -42,7 +42,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PostDetail({ params }: Props) {
   const { id } = await params;
 
-  // 1. 현재 보고 있는 글 가져오기
   const { data: post, error } = await supabase
     .from('posts')
     .select('*')
@@ -53,7 +52,6 @@ export default async function PostDetail({ params }: Props) {
     notFound();
   }
 
-  // 2. 다른 추천 글 3개 가져오기
   const { data: recentPosts } = await supabase
     .from('posts')
     .select('*')
@@ -69,12 +67,9 @@ export default async function PostDetail({ params }: Props) {
         
         {/* 카테고리 + 관리자 버튼 영역 */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-           {/* 카테고리 */}
            <span className="inline-block bg-blue-100 text-blue-700 font-bold px-4 py-1.5 rounded-full text-sm hover:bg-blue-200 transition cursor-pointer self-start">
             {post.category}
           </span>
-
-          {/* 관리자용 수정/삭제 버튼 */}
           <AdminPostControls postId={post.id} />
         </div>
 
@@ -95,15 +90,9 @@ export default async function PostDetail({ params }: Props) {
           </div>
         </div>
 
-        {/* 메인 이미지 */}
-        {post.image_url && (
-          <div className="rounded-2xl overflow-hidden mb-12 shadow-lg">
-            <img src={post.image_url} alt={post.title} className="w-full h-auto object-cover max-h-[500px]"/>
-          </div>
-        )}
+        {/* ❌ [삭제됨] 여기에 있던 '메인 이미지(썸네일)' 코드를 완전히 제거했습니다. */}
 
-        {/* 본문 내용 (HTML 적용 + 이미지 클릭 확대 기능) */}
-        {/* ✅ [수정됨] 기존 dangerouslySetInnerHTML div를 삭제하고 PostContent 컴포넌트로 교체 */}
+        {/* 본문 내용 (뷰어 컴포넌트) */}
         {post.content ? (
           <PostContent content={post.content} />
         ) : (
