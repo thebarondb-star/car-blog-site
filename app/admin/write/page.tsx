@@ -3,38 +3,39 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Save, Upload, Loader2, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Save, Upload, Loader2, Image as ImageIcon, Eye, PenTool } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
-// ✅ 카테고리 목록 (버튼형 UI 유지)
+// ✅ 카테고리 목록
 const CATEGORIES = ["닥터렌트는?", "호갱탈출", "장기렌트정보"];
 
 export default function AdminWrite() {
   const router = useRouter();
-  const textareaRef = useRef<HTMLTextAreaElement>(null); // 커서 위치 파악용
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [loading, setLoading] = useState(false);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [uploadingBody, setUploadingBody] = useState(false);
+  
+  // ✨ [추가됨] 작성모드 vs 미리보기 모드 상태 관리
+  const [viewMode, setViewMode] = useState<"write" | "preview">("write");
 
-  // 입력값 상태 관리
   const [formData, setFormData] = useState({
-    password: "", // ✅ 비밀번호 필드 부활
+    password: "",
     title: "",
     category: CATEGORIES[0],
     desc_text: "",
     content: "",
-    image_url: "", // 썸네일용 이미지 주소
+    image_url: "",
   });
 
-  // 텍스트 입력 핸들러
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ✅ 1. 썸네일 이미지 업로드 (따로 올리기)
+  // 1. 썸네일 이미지 업로드
   const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploadingThumbnail(true);
@@ -43,7 +44,7 @@ export default function AdminWrite() {
       const file = e.target.files[0];
       const fileExt = file.name.split(".").pop();
       const fileName = `thumb_${Date.now()}.${fileExt}`;
-      const filePath = `consult_photos/${fileName}`; // 기존 버킷 경로 유지
+      const filePath = `consult_photos/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("consult_photos")
@@ -61,7 +62,7 @@ export default function AdminWrite() {
     }
   };
 
-  // ✅ 2. 본문 중간 삽입 이미지 업로드 (커서 위치에 삽입)
+  // 2. 본문 중간 삽입 이미지 업로드
   const handleBodyImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       if (!e.target.files || e.target.files.length === 0) return;
@@ -80,7 +81,6 @@ export default function AdminWrite() {
 
       const { data } = supabase.storage.from("consult_photos").getPublicUrl(filePath);
       
-      // ✨ [핵심 수정] 커서 위치에 태그 삽입하기
       const imgTag = `\n<img src="${data.publicUrl}" alt="첨부이미지" class="w-full rounded-xl shadow-md my-4" />\n`;
       
       const textarea = textareaRef.current;
@@ -88,13 +88,9 @@ export default function AdminWrite() {
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
         const text = formData.content;
-        
-        // 커서 앞 내용 + 이미지 태그 + 커서 뒤 내용 합치기
         const newContent = text.substring(0, start) + imgTag + text.substring(end);
-        
         setFormData(prev => ({ ...prev, content: newContent }));
       } else {
-        // 만약 에러로 커서를 못 찾으면 그냥 뒤에 붙임
         setFormData(prev => ({ ...prev, content: prev.content + imgTag }));
       }
 
@@ -102,7 +98,7 @@ export default function AdminWrite() {
       alert("본문 이미지 업로드 실패: " + error.message);
     } finally {
       setUploadingBody(false);
-      e.target.value = ""; // 같은 파일 재선택 가능하게 초기화
+      e.target.value = ""; 
     }
   };
 
@@ -110,7 +106,6 @@ export default function AdminWrite() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // ✅ 비밀번호 확인 로직 복구
     if (formData.password !== "dlrns6632!") {
       alert("관리자 비밀번호가 틀렸습니다.");
       return;
@@ -126,7 +121,6 @@ export default function AdminWrite() {
     try {
       setLoading(true);
 
-      // 날짜 포맷 (YYYY.MM.DD)
       const today = new Date();
       const dateText = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
 
@@ -136,16 +130,16 @@ export default function AdminWrite() {
           category: formData.category,
           desc_text: formData.desc_text,
           content: formData.content,
-          image_url: formData.image_url, // 썸네일
+          image_url: formData.image_url,
           date_text: dateText,
-          color_class: "bg-slate-800" // 기본 배경색
+          color_class: "bg-slate-800"
         },
       ]);
 
       if (error) throw error;
 
       alert("글이 성공적으로 등록되었습니다!");
-      router.push("/"); // 메인으로 이동
+      router.push("/");
       router.refresh();
     } catch (error: any) {
       console.error(error);
@@ -158,7 +152,6 @@ export default function AdminWrite() {
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-10">
       <div className="max-w-4xl mx-auto">
-        {/* 상단 헤더 */}
         <div className="flex items-center justify-between mb-8">
           <Link href="/" className="flex items-center text-slate-500 hover:text-slate-900 transition font-medium">
             <ArrowLeft className="w-5 h-5 mr-2" />
@@ -169,7 +162,7 @@ export default function AdminWrite() {
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-8">
           
-          {/* 0. 비밀번호 (최상단 배치) */}
+          {/* 0. 비밀번호 */}
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">관리자 비밀번호 🔒</label>
             <input
@@ -184,7 +177,7 @@ export default function AdminWrite() {
 
           <hr className="border-slate-100" />
 
-          {/* 1. 카테고리 선택 (버튼형 UI 유지) */}
+          {/* 1. 카테고리 */}
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-3">카테고리 선택</label>
             <div className="flex flex-wrap gap-2">
@@ -207,7 +200,7 @@ export default function AdminWrite() {
             </div>
           </div>
 
-          {/* 2. 제목 입력 */}
+          {/* 2. 제목 */}
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">제목</label>
             <input
@@ -220,9 +213,9 @@ export default function AdminWrite() {
             />
           </div>
 
-          {/* 3. 썸네일 이미지 (따로 업로드) */}
+          {/* 3. 썸네일 */}
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">대표 썸네일 (목록에 보여질 이미지)</label>
+            <label className="block text-sm font-bold text-slate-700 mb-2">대표 썸네일 (목록용)</label>
             <div className="flex items-center gap-4">
               <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-3 rounded-xl flex items-center gap-2 transition font-medium text-sm">
                 {uploadingThumbnail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
@@ -235,10 +228,9 @@ export default function AdminWrite() {
                 </div>
               )}
             </div>
-            <p className="text-xs text-slate-400 mt-2">※ 여기에 올린 사진은 글 목록에서만 보입니다.</p>
           </div>
 
-          {/* 4. 요약글 입력 */}
+          {/* 4. 요약글 */}
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">요약글 (리스트 노출용)</label>
             <textarea
@@ -250,31 +242,67 @@ export default function AdminWrite() {
             />
           </div>
 
-          {/* 5. 본문 입력 (중간 삽입 기능 포함) */}
+          {/* 5. 본문 입력 (미리보기 기능 추가됨) */}
           <div>
-            <div className="flex justify-between items-end mb-2">
+            <div className="flex justify-between items-end mb-3">
               <label className="block text-sm font-bold text-slate-700">본문 내용</label>
-              
-              {/* ✨ 본문 이미지 삽입 버튼 ✨ */}
-              <label className={`
-                cursor-pointer flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition
-                ${uploadingBody ? "bg-slate-100 text-slate-400" : "bg-blue-50 text-blue-600 hover:bg-blue-100"}
-              `}>
-                {uploadingBody ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
-                {uploadingBody ? "업로드 중..." : "본문에 사진 넣기"}
-                <input type="file" accept="image/*" onChange={handleBodyImageUpload} className="hidden" disabled={uploadingBody} />
-              </label>
+
+              {/* ✨ 뷰 모드 전환 버튼 (작성 / 미리보기) */}
+              <div className="flex bg-slate-100 p-1 rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("write")}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-bold transition ${viewMode === 'write' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  <PenTool className="w-4 h-4" /> 작성하기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("preview")}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-bold transition ${viewMode === 'preview' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  <Eye className="w-4 h-4" /> 미리보기
+                </button>
+              </div>
             </div>
 
-            <textarea
-              ref={textareaRef} // ✨ 커서 위치 파악을 위한 연결
-              name="content"
-              value={formData.content}
-              onChange={handleChange}
-              placeholder="내용을 입력하세요. (HTML 태그 사용 가능)"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition h-96 font-mono text-sm leading-relaxed"
-            />
-            <p className="text-xs text-slate-400 mt-2 text-right">💡 Tip: 글을 쓰다가 '본문에 사진 넣기'를 누르면 커서 위치에 사진이 들어갑니다.</p>
+            {/* 작성 모드일 때 */}
+            {viewMode === "write" && (
+              <div className="relative">
+                {/* 본문 사진 추가 버튼 */}
+                <div className="absolute top-2 right-2 z-10">
+                  <label className={`
+                    cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-blue-200
+                    ${uploadingBody ? "bg-slate-100 text-slate-400" : "bg-blue-50 text-blue-600 hover:bg-blue-100"}
+                  `}>
+                    {uploadingBody ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}
+                    {uploadingBody ? "업로드 중..." : "본문에 사진 넣기"}
+                    <input type="file" accept="image/*" onChange={handleBodyImageUpload} className="hidden" disabled={uploadingBody} />
+                  </label>
+                </div>
+
+                <textarea
+                  ref={textareaRef}
+                  name="content"
+                  value={formData.content}
+                  onChange={handleChange}
+                  placeholder="내용을 입력하세요. (HTML 태그 사용 가능)"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition h-96 font-mono text-sm leading-relaxed"
+                />
+                <p className="text-xs text-slate-400 mt-2 text-right">💡 작성 중 [미리보기] 버튼을 누르면 실제 화면을 볼 수 있습니다.</p>
+              </div>
+            )}
+
+            {/* ✨ 미리보기 모드일 때 (HTML 렌더링) */}
+            {viewMode === "preview" && (
+              <div className="w-full min-h-[384px] max-h-[600px] overflow-y-auto px-6 py-6 rounded-xl border border-slate-200 bg-white prose prose-slate max-w-none">
+                {formData.content ? (
+                  <div dangerouslySetInnerHTML={{ __html: formData.content }} />
+                ) : (
+                  <p className="text-slate-400 text-center py-20">작성된 내용이 없습니다.</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* 저장 버튼 */}
