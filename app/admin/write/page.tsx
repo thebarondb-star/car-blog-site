@@ -41,6 +41,32 @@ export default function AdminWrite() {
     }
   };
 
+  // ✨ [핵심 수정] 이미지 클릭 시 '화면 표시 크기'만 조절 (원본 유지)
+  const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+
+    if (target.tagName === "IMG") {
+      const img = target as HTMLImageElement;
+      
+      // 현재 적용된 화면 크기 가져오기
+      const currentWidth = img.style.width || "100%";
+      
+      const newWidth = prompt(
+        "화면에 보여질 크기를 입력하세요 (원본은 유지됨)\n예: 50%, 80%, 300px", 
+        currentWidth
+      );
+
+      if (newWidth) {
+        // 스타일만 변경 (원본 파일은 그대로)
+        img.style.width = newWidth;
+        // 중앙 정렬을 위해 margin auto 추가 가능하지만, 일단 크기만 조절
+        handleVisualInput(); 
+      }
+    }
+    
+    updateCursorPosition();
+  };
+
   useEffect(() => {
     if (mode === "visual" && editorRef.current) {
       editorRef.current.innerHTML = formData.content;
@@ -70,14 +96,12 @@ export default function AdminWrite() {
     } catch (error: any) { alert(error.message); } finally { setUploadingThumbnail(false); }
   };
 
-  // ✨ [핵심 수정] 사진 선택 시 Alt 태그 입력받기
   const handleBodyImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       if (!e.target.files || e.target.files.length === 0) return;
-
-      // 1. 파일 선택 직후, 사용자에게 설명을 물어봅니다.
-      const altText = prompt("이미지 설명을 입력하세요 (검색엔진 노출용):", "사진 설명");
-      if (altText === null) return; // 취소 누르면 업로드 안 함
+      
+      const altText = prompt("이미지 설명을 입력하세요 (SEO용):", "사진 설명");
+      if (altText === null) return;
 
       setUploadingBody(true);
 
@@ -88,10 +112,10 @@ export default function AdminWrite() {
       if (error) throw error;
       const { data } = supabase.storage.from("consult_photos").getPublicUrl(filePath);
       
-      // 2. 입력받은 altText를 HTML에 넣습니다.
+      // ✨ [수정] 기본값 width: 100% (나중에 클릭해서 줄일 수 있음)
       const imgTag = `
         <figure class="my-8 text-center">
-          <img src="${data.publicUrl}" alt="${altText}" class="w-full rounded-xl shadow-md inline-block" />
+          <img src="${data.publicUrl}" alt="${altText}" style="width: 100%; max-width: 100%;" class="rounded-xl shadow-md inline-block transition-all cursor-pointer" />
           <figcaption class="mt-2 text-sm text-slate-500 font-medium">▲ ${altText}</figcaption>
         </figure>
         <div class="my-4"><br></div> 
@@ -182,14 +206,15 @@ export default function AdminWrite() {
               <div 
                 ref={editorRef} 
                 contentEditable 
+                // ✨ 클릭 시 사이즈 조절 (뷰어에서는 원본 유지)
+                onClick={handleEditorClick} 
                 onKeyUp={updateCursorPosition}
-                onClick={updateCursorPosition}
                 onBlur={updateCursorPosition}
                 onInput={handleVisualInput} 
                 className="w-full min-h-[500px] p-6 rounded-xl border border-slate-200 prose prose-slate max-w-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
                 style={{ lineHeight: "1.8" }} 
               />
-              <p className="text-xs text-slate-400 mt-2 text-right">💡 사진을 넣을 때 설명을 입력하면 검색엔진(SEO)에 도움이 됩니다.</p>
+              <p className="text-xs text-slate-400 mt-2 text-right">💡 이미지를 클릭하여 '화면 표시 크기'를 줄일 수 있습니다. (확대 시엔 원본 화질)</p>
             </div>
 
             <div className={mode === "html" ? "block" : "hidden"}>
