@@ -59,7 +59,8 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
     if (mode === "visual" && editorRef.current) editorRef.current.innerHTML = formData.content;
   }, [mode]);
 
-  const saveCursorPosition = () => {
+  // ✨ [핵심 수정] 커서 위치를 실시간으로 저장
+  const updateCursorPosition = () => {
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
       if (editorRef.current && editorRef.current.contains(selection.anchorNode)) {
@@ -109,7 +110,6 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
             div.innerHTML = imgTag;
             savedRange.current.insertNode(div);
             savedRange.current.collapse(false);
-            savedRange.current = null;
             handleVisualInput();
           } else {
              if (editorRef.current) { editorRef.current.innerHTML += imgTag; handleVisualInput(); }
@@ -157,12 +157,12 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
           </div>
           <hr className="border-slate-100" />
 
-          {/* ✨ [핵심 수정] 에디터 툴바 Sticky 적용 */}
+          {/* 에디터 툴바 */}
           <div className="relative">
             <div className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-100 py-4 flex justify-between items-center mb-4">
               <label className="block text-sm font-bold text-slate-700">본문 수정</label>
               <div className="flex items-center gap-3">
-                <label onClick={saveCursorPosition} className={`cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-blue-200 ${uploadingBody ? "bg-slate-100" : "bg-blue-50 text-blue-600 hover:bg-blue-100"}`}>
+                <label className={`cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-blue-200 ${uploadingBody ? "bg-slate-100" : "bg-blue-50 text-blue-600 hover:bg-blue-100"}`}>
                   {uploadingBody ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />} 본문 사진+설명
                   <input type="file" accept="image/*" onChange={handleBodyImageUpload} className="hidden" disabled={uploadingBody} />
                 </label>
@@ -174,7 +174,17 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
             </div>
 
             <div className={mode === "visual" ? "block" : "hidden"}>
-              <div ref={editorRef} contentEditable onInput={handleVisualInput} className="w-full min-h-[500px] p-6 rounded-xl border border-slate-200 prose prose-slate max-w-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" style={{ lineHeight: "1.8" }} />
+              <div 
+                ref={editorRef} 
+                contentEditable 
+                // ✨ [핵심 수정] 실시간 위치 저장
+                onKeyUp={updateCursorPosition}
+                onClick={updateCursorPosition}
+                onBlur={updateCursorPosition}
+                onInput={handleVisualInput} 
+                className="w-full min-h-[500px] p-6 rounded-xl border border-slate-200 prose prose-slate max-w-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                style={{ lineHeight: "1.8" }} 
+              />
               <p className="text-xs text-slate-400 mt-2 text-right">💡 커서가 깜빡이는 곳에 사진이 들어갑니다.</p>
             </div>
 
