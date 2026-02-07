@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { Calendar, User } from "lucide-react"; // 필요한 아이콘만 남김
+import { Calendar, User } from "lucide-react"; 
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import AdminPostControls from "@/components/AdminPostControls";
+import PostContent from "@/components/PostContent"; // ✅ [추가됨] 새로 만든 뷰어 가져오기
 
 export const revalidate = 0;
 
@@ -11,7 +12,7 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
-// SEO 메타데이터 생성 (기존 코드 유지)
+// SEO 메타데이터 생성
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   return {
-    title: `${post.title} | Dr.Rent`, // 사이트 이름 리브랜딩 반영
+    title: `${post.title} | Dr.Rent`, 
     description: post.desc_text,
     openGraph: {
       title: post.title,
@@ -66,14 +67,14 @@ export default async function PostDetail({ params }: Props) {
       {/* 본문 영역 */}
       <article className="max-w-4xl mx-auto px-4 py-10">
         
-        {/* ✅ [수정됨] 카테고리 + 관리자 버튼 영역 */}
+        {/* 카테고리 + 관리자 버튼 영역 */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
            {/* 카테고리 */}
            <span className="inline-block bg-blue-100 text-blue-700 font-bold px-4 py-1.5 rounded-full text-sm hover:bg-blue-200 transition cursor-pointer self-start">
             {post.category}
           </span>
 
-          {/* ✨ [추가됨] 관리자용 수정/삭제 버튼 */}
+          {/* 관리자용 수정/삭제 버튼 */}
           <AdminPostControls postId={post.id} />
         </div>
 
@@ -90,7 +91,6 @@ export default async function PostDetail({ params }: Props) {
           </div>
           <div className="flex items-center gap-1">
             <User className="w-4 h-4" />
-            {/* 리브랜딩 반영 */}
             에디터 닥터리 
           </div>
         </div>
@@ -102,20 +102,14 @@ export default async function PostDetail({ params }: Props) {
           </div>
         )}
 
-        {/* 본문 내용 (HTML 적용) */}
-        <div className="prose prose-lg max-w-none text-slate-700 leading-8">
-          {/* 요약문 강조 */}
-          <p className="text-xl font-medium text-slate-900 mb-8 p-6 bg-slate-50 rounded-xl border-l-4 border-blue-500">
-            {post.desc_text}
-          </p>
-          
-          {/* SEO HTML 본문 */}
-          {post.content ? (
-            <div dangerouslySetInnerHTML={{ __html: post.content }} />
-          ) : (
-            <p className="text-center py-10 text-slate-400">본문 내용을 불러오는 중입니다.</p>
-          )}
-        </div>
+        {/* 본문 내용 (HTML 적용 + 이미지 클릭 확대 기능) */}
+        {/* ✅ [수정됨] 기존 dangerouslySetInnerHTML div를 삭제하고 PostContent 컴포넌트로 교체 */}
+        {post.content ? (
+          <PostContent content={post.content} />
+        ) : (
+          <p className="text-center py-10 text-slate-400">본문 내용을 불러오는 중입니다.</p>
+        )}
+
       </article>
 
       {/* 다른 글 목록 */}
