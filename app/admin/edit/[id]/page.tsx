@@ -3,15 +3,20 @@
 import { useState, useEffect, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Save, Upload, Loader2, Image as ImageIcon, Code, Type } from "lucide-react";
+import { ArrowLeft, Save, Upload, Loader2, Image as ImageIcon, Code, Type, Lock, Unlock } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
 const CATEGORIES = ["닥터렌트는?", "호갱탈출", "장기렌트정보"];
+const ADMIN_PASSWORD = "dlrns6632!"; // 관리자 비밀번호
 
 export default function AdminEdit({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+
+  // ✨ [핵심] 인증 상태 관리 (기본값: false - 잠김)
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [inputPassword, setInputPassword] = useState("");
 
   const [mode, setMode] = useState<"visual" | "html">("visual");
   const editorRef = useRef<HTMLDivElement>(null);
@@ -24,7 +29,6 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
   const [uploadingBody, setUploadingBody] = useState(false);
 
   const [formData, setFormData] = useState({
-    password: "",
     title: "",
     category: CATEGORIES[0],
     desc_text: "",
@@ -32,19 +36,33 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
     image_url: "",
   });
 
+  // 데이터 불러오기 (비밀번호 뚫으면 보여줄 데이터 미리 준비)
   useEffect(() => {
     const fetchPost = async () => {
       try {
         const { data, error } = await supabase.from("posts").select("*").eq("id", id).single();
         if (error) throw error;
         if (data) {
-          setFormData({ password: "", title: data.title, category: data.category, desc_text: data.desc_text, content: data.content, image_url: data.image_url });
+          setFormData({ title: data.title, category: data.category, desc_text: data.desc_text, content: data.content, image_url: data.image_url });
           if (editorRef.current) editorRef.current.innerHTML = data.content;
         }
       } catch (err) { alert("글 불러오기 실패"); router.push("/"); } finally { setFetching(false); }
     };
     fetchPost();
   }, [id, router]);
+
+  // ✨ [핵심 기능] 비밀번호 확인 함수
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputPassword === ADMIN_PASSWORD) {
+      setIsAuthenticated(true); // 문 열어줌
+    } else {
+      alert("관리자 비밀번호가 틀렸습니다.");
+      setInputPassword("");
+    }
+  };
+
+  // ---------------- 아래부터는 기존 에디터 로직 (동일함) ----------------
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -55,17 +73,12 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
     if (editorRef.current) setFormData(prev => ({ ...prev, content: editorRef.current?.innerHTML || "" }));
   };
 
-  // ✨ [핵심 수정] 이미지 클릭 시 '화면 표시 크기'만 조절
   const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
     if (target.tagName === "IMG") {
       const img = target as HTMLImageElement;
       const currentWidth = img.style.width || "100%";
-      const newWidth = prompt(
-        "화면에 보여질 크기를 입력하세요 (원본은 유지됨)\n예: 50%, 80%, 300px", 
-        currentWidth
-      );
-
+      const newWidth = prompt("화면에 보여질 크기를 입력하세요 (예: 50%, 80%, 300px)", currentWidth);
       if (newWidth) {
         img.style.width = newWidth;
         handleVisualInput();
@@ -76,7 +89,7 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
 
   useEffect(() => {
     if (mode === "visual" && editorRef.current) editorRef.current.innerHTML = formData.content;
-  }, [mode]);
+  }, [mode, isAuthenticated]); // 인증 풀리면 내용 채워넣기
 
   const updateCursorPosition = () => {
     const selection = window.getSelection();
@@ -104,12 +117,10 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
   const handleBodyImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       if (!e.target.files || e.target.files.length === 0) return;
-
       const altText = prompt("이미지 설명을 입력하세요 (SEO용):", "사진 설명");
       if (altText === null) return;
 
       setUploadingBody(true);
-
       const file = e.target.files[0];
       const fileName = `body_${Date.now()}.${file.name.split(".").pop()}`;
       const filePath = `consult_photos/${fileName}`;
@@ -144,8 +155,8 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.password !== "dlrns6632!") { alert("비밀번호 오류"); return; }
-    if (!confirm("저장하시겠습니까?")) return;
+    if (!isAuthenticated) return; // 이중 체크
+    if (!confirm("수정사항을 저장하시겠습니까?")) return;
 
     try {
       setLoading(true);
@@ -159,6 +170,40 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
 
   if (fetching) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin w-8 h-8 text-blue-600"/></div>;
 
+  // ✨ [화면 분기] 인증 전에는 자물쇠 화면만 보여줌
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+        <form onSubmit={handleLogin} className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center space-y-6">
+          <div className="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-8 h-8 text-slate-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900">관리자 확인</h2>
+          <p className="text-slate-500 text-sm">이 페이지는 관리자만 접근할 수 있습니다.<br/>비밀번호를 입력해주세요.</p>
+          
+          <input 
+            type="password" 
+            value={inputPassword}
+            onChange={(e) => setInputPassword(e.target.value)}
+            placeholder="관리자 비밀번호"
+            className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-slate-900 focus:outline-none transition text-center text-lg tracking-widest"
+            autoFocus
+          />
+
+          <div className="flex gap-3">
+             <button type="button" onClick={() => router.back()} className="flex-1 py-3 rounded-xl border border-slate-300 text-slate-600 font-bold hover:bg-slate-50 transition">
+              돌아가기
+            </button>
+            <button type="submit" className="flex-1 bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition flex items-center justify-center gap-2">
+              <Unlock className="w-4 h-4" /> 확인
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
+  // ✨ [인증 성공 시] 에디터 화면 렌더링 (기존 코드)
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-10">
       <div className="max-w-4xl mx-auto">
@@ -167,8 +212,9 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
           <h1 className="text-2xl font-bold text-slate-900">글 수정하기 ✏️</h1>
         </div>
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-8">
-          <div><label className="block text-sm font-bold text-slate-700 mb-2">관리자 비밀번호 🔒</label><input type="password" name="password" value={formData.password} onChange={handleChange} placeholder="수정하려면 입력하세요" autoComplete="new-password" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500" /></div>
-          <hr className="border-slate-100" />
+          
+          {/* 이미 인증했으므로 비밀번호 입력란은 이제 필요 없음 (삭제함) */}
+          
           <div className="space-y-6">
             <div><label className="block text-sm font-bold text-slate-700 mb-2">카테고리</label><div className="flex flex-wrap gap-2">{CATEGORIES.map((cat) => (<button key={cat} type="button" onClick={() => setFormData((prev) => ({ ...prev, category: cat }))} className={`px-4 py-2 rounded-lg text-sm font-bold border ${formData.category === cat ? "bg-slate-900 text-white" : "bg-white text-slate-500"}`}>{cat}</button>))}</div></div>
             <div><label className="block text-sm font-bold text-slate-700 mb-2">제목</label><input type="text" name="title" value={formData.title} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border font-bold text-lg" /></div>
@@ -198,7 +244,6 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
               <div 
                 ref={editorRef} 
                 contentEditable 
-                // ✨ 클릭 시 사이즈 조절
                 onClick={handleEditorClick}
                 onKeyUp={updateCursorPosition}
                 onBlur={updateCursorPosition}
