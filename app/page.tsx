@@ -82,8 +82,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
         <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6">
           {[
             { icon: <Zap className="w-6 h-6 text-yellow-500" />, title: "즉시 출고 시스템", desc: "전국 24개 렌트사 재고 통합 조회로 7일 내 인도 가능합니다." },
-            { icon: <ShieldCheck className="w-6 h-6 text-green-500" />, title: "무심사/예외 승인", desc: "저신용자, 무소득자도 승인 가능한 자체 심사 노하우 보유." },
-            { icon: <Calculator className="w-6 h-6 text-blue-500" />, title: "영업 수수료 0원", desc: "불필요한 딜러 마진을 제거하여 월 납입료를 낮췄습니다." },
+            { icon: <ShieldCheck className="w-6 h-6 text-green-500" />, title: "허위견적서 진단", desc: "허위견적 진단 및 최적견적 제공." },
+            { icon: <Calculator className="w-6 h-6 text-blue-500" />, title: "영업 수수료 0원", desc: "불필요한 딜러 마진 ZERO 최저견적을 드립니다." },
           ].map((item, idx) => (
             <div key={idx} className="bg-white p-8 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 hover:-translate-y-1 transition duration-300">
               <div className="bg-slate-50 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
