@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-// Car 아이콘 import 제거함 (사용하지 않음)
 import { CheckCircle2, Loader2, Upload, X, ShieldCheck, ExternalLink } from "lucide-react";
 
 export default function ConsultPage() {
@@ -105,13 +104,14 @@ export default function ConsultPage() {
     <>
       <div className="max-w-2xl mx-auto py-12 px-4">
         <div className="text-center mb-10">
-          {/* ✅ [수정됨] 여기에 있던 자동차 아이콘(Car)과 파란 동그라미 배경을 삭제했습니다.
-              나머지 제목과 설명 텍스트는 그대로 유지됩니다.
-          */}
           <h1 className="text-3xl font-bold mb-2 text-slate-900">무료 견적 상세 분석</h1>
           <p className="text-slate-500">
             받으신 견적서 사진을 올려주시면<br />
             숨어있는 수수료와 거품을 찾아드립니다.
+          </p>
+          {/* ✅ [추가됨] 요청하신 빨간색 안내 문구 */}
+          <p className="text-red-500 text-sm mt-3 font-bold">
+            ※ 견적분석이 필요하신 분들만 올려주세요(필수사항 아님)
           </p>
         </div>
 
@@ -260,7 +260,7 @@ export default function ConsultPage() {
               <section>
                 <h3 className="font-bold text-lg mb-3 text-slate-900">1. 개인정보의 수집 및 이용 목적</h3>
                 <p className="text-sm">
-                  회사는 수집한 개인정보를 다음의 목적을 위해 활용합니다[web:7][web:9]:
+                  회사는 수집한 개인정보를 다음의 목적을 위해 활용합니다:
                 </p>
                 <ul className="list-disc list-inside text-sm mt-2 space-y-1 ml-2">
                   <li>차량 장기렌트 상담 서비스 제공</li>
@@ -290,7 +290,7 @@ export default function ConsultPage() {
                     </ul>
                   </div>
                   <p className="text-xs text-slate-500 mt-2">
-                    * 필수 항목은 상담 서비스 제공을 위해 반드시 필요한 정보이며, 선택 항목은 더 나은 상담을 위한 참고 정보입니다[web:9].
+                    * 필수 항목은 상담 서비스 제공을 위해 반드시 필요한 정보이며, 선택 항목은 더 나은 상담을 위한 참고 정보입니다.
                   </p>
                 </div>
               </section>
@@ -298,7 +298,7 @@ export default function ConsultPage() {
               <section>
                 <h3 className="font-bold text-lg mb-3 text-slate-900">3. 개인정보의 보유 및 이용 기간</h3>
                 <p className="text-sm">
-                  회사는 원칙적으로 개인정보 수집 및 이용목적이 달성된 후에는 해당 정보를 지체 없이 파기합니다[web:1][web:7]. 단, 다음의 정보에 대해서는 아래의 이유로 명시한 기간 동안 보존합니다:
+                  회사는 원칙적으로 개인정보 수집 및 이용목적이 달성된 후에는 해당 정보를 지체 없이 파기합니다. 단, 다음의 정보에 대해서는 아래의 이유로 명시한 기간 동안 보존합니다:
                 </p>
                 <ul className="list-disc list-inside text-sm mt-2 space-y-1 ml-2">
                   <li><strong>보존 항목:</strong> 성명, 연락처, 상담 내용, 견적서 사진</li>
@@ -325,7 +325,7 @@ export default function ConsultPage() {
               <section>
                 <h3 className="font-bold text-lg mb-3 text-slate-900">5. 정보주체의 권리 및 행사 방법</h3>
                 <p className="text-sm">
-                  정보주체(이용자)는 언제든지 다음과 같은 권리를 행사할 수 있습니다[web:5][web:9]:
+                  정보주체(이용자)는 언제든지 다음과 같은 권리를 행사할 수 있습니다:
                 </p>
                 <ul className="list-disc list-inside text-sm mt-2 space-y-1 ml-2">
                   <li>개인정보 열람 요구</li>
@@ -352,7 +352,7 @@ export default function ConsultPage() {
               <section>
                 <h3 className="font-bold text-lg mb-3 text-slate-900">7. 개인정보의 안전성 확보 조치</h3>
                 <p className="text-sm">
-                  회사는 개인정보의 안전성 확보를 위해 다음과 같은 조치를 취하고 있습니다[web:7]:
+                  회사는 개인정보의 안전성 확보를 위해 다음과 같은 조치를 취하고 있습니다:
                 </p>
                 <ul className="list-disc list-inside text-sm mt-2 space-y-1 ml-2">
                   <li>개인정보 취급 직원의 최소화 및 교육</li>
@@ -365,7 +365,7 @@ export default function ConsultPage() {
               <section>
                 <h3 className="font-bold text-lg mb-3 text-slate-900">8. 동의 거부 권리 및 불이익</h3>
                 <p className="text-sm">
-                  정보주체는 개인정보 수집 및 이용 동의를 거부할 권리가 있습니다. 다만, 필수 항목(성명, 연락처)에 대한 동의를 거부하시는 경우 상담 서비스 제공이 제한될 수 있습니다[web:9].
+                  정보주체는 개인정보 수집 및 이용 동의를 거부할 권리가 있습니다. 다만, 필수 항목(성명, 연락처)에 대한 동의를 거부하시는 경우 상담 서비스 제공이 제한될 수 있습니다.
                 </p>
                 <p className="text-sm mt-2">
                   선택 항목에 대한 동의를 거부하시는 경우에도 기본적인 상담 서비스 이용에는 제한이 없습니다.
@@ -391,7 +391,7 @@ export default function ConsultPage() {
               <section>
                 <h3 className="font-bold text-lg mb-3 text-slate-900">10. 개인정보 처리방침 변경</h3>
                 <p className="text-sm">
-                  이 개인정보 처리방침은 2026년 1월 29일부터 적용되며, 법령 및 방침에 따른 변경내용의 추가, 삭제 및 정정이 있는 경우에는 변경사항의 시행 7일 전부터 공지사항을 통하여 고지할 것입니다[web:1].
+                  이 개인정보 처리방침은 2026년 1월 29일부터 적용되며, 법령 및 방침에 따른 변경내용의 추가, 삭제 및 정정이 있는 경우에는 변경사항의 시행 7일 전부터 공지사항을 통하여 고지할 것입니다.
                 </p>
               </section>
 
