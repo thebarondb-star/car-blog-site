@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase'; 
 import * as XLSX from 'xlsx';
-import { useRouter } from 'next/navigation'; // 이동 기능 추가
+import { useRouter } from 'next/navigation';
+// ✨ [추가] 쓰레기통 아이콘 추가
+import { Trash2 } from 'lucide-react';
 
 export default function AdminInbox() {
   const router = useRouter();
@@ -14,7 +16,6 @@ export default function AdminInbox() {
   useEffect(() => {
     const checkAuth = () => {
       const isAdmin = localStorage.getItem('admin_session');
-      // 입장권이 없으면 로그인 페이지로 쫓아냄
       if (!isAdmin) {
         router.push('/admin/login');
       }
@@ -25,7 +26,6 @@ export default function AdminInbox() {
   // 데이터 불러오기
   useEffect(() => {
     const fetchData = async () => {
-      // 권한이 없으면 데이터 요청도 하지 않음
       if (!localStorage.getItem('admin_session')) return;
 
       const { data, error } = await supabase
@@ -44,15 +44,36 @@ export default function AdminInbox() {
 
   // 로그아웃 기능
   const handleLogout = () => {
-    localStorage.removeItem('admin_session'); // 입장권 찢기
+    localStorage.removeItem('admin_session');
     router.push('/admin/login');
   };
 
+  // 엑셀 저장
   const downloadExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(list);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "상담내역");
     XLSX.writeFile(workbook, `상담리스트_${new Date().toLocaleDateString()}.xlsx`);
+  };
+
+  // ✨ [추가] 삭제 기능 함수
+  const handleDelete = async (id: number) => {
+    if (!confirm("정말 이 상담 내역을 삭제하시겠습니까?\n(복구할 수 없습니다)")) return;
+
+    try {
+      const { error } = await supabase
+        .from('customer_consults')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // 삭제 성공 시 화면에서도 즉시 제거 (새로고침 없이)
+      setList((prev) => prev.filter((item) => item.id !== id));
+      alert("삭제되었습니다.");
+    } catch (error: any) {
+      alert("삭제 실패: " + error.message);
+    }
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">보안 확인 중...</div>;
@@ -88,6 +109,8 @@ export default function AdminInbox() {
               <th className="p-3">차종</th>
               <th className="p-3 w-1/3">문의내용</th>
               <th className="p-3">첨부</th>
+              {/* ✨ [추가] 관리 컬럼 */}
+              <th className="p-3 text-center">관리</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -119,6 +142,16 @@ export default function AdminInbox() {
                   ) : (
                     <span className="text-gray-300 text-xs">-</span>
                   )}
+                </td>
+                {/* ✨ [추가] 삭제 버튼 */}
+                <td className="p-3 text-center">
+                  <button 
+                    onClick={() => handleDelete(item.id)}
+                    className="text-red-400 hover:text-red-600 transition p-1 rounded hover:bg-red-50"
+                    title="삭제"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </td>
               </tr>
             ))}
