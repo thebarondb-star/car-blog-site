@@ -9,12 +9,11 @@ async function getCategories() {
   return ["전체", "닥터렌트는?", "호갱탈출", "장기렌트정보", "특가차량리스트"];
 }
 
-// 2. 글 목록 가져오기 (✨ 정렬 로직 수정됨)
+// 2. 글 목록 가져오기 (정렬 로직은 유지: 순서 번호 -> 최신순)
 async function getPosts(category?: string) {
   let query = supabase
     .from('posts')
     .select('*')
-    // ✨ 1순위: priority (오름차순 1,2,3...), 2순위: id (최신순)
     .order('priority', { ascending: true }) 
     .order('id', { ascending: false });
 
@@ -158,10 +157,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
                   </div>
                   <div className="p-6 flex flex-col flex-1">
                     <h3 className="font-bold text-lg mb-3 leading-snug text-slate-800 group-hover:text-blue-600 transition">
-                      {/* 순서 번호 표시 (관리자 확인용, 필요 없으면 지우셔도 됩니다) */}
-                      {post.priority && post.priority !== 9999 && (
-                        <span className="text-xs text-red-500 mr-1">[{post.priority}]</span>
-                      )}
+                      {/* ✅ [수정됨] 여기에 있던 빨간색 숫자 표시 코드를 삭제했습니다. */}
                       {post.title}
                     </h3>
                     <p className="text-slate-500 text-sm line-clamp-2 mb-4 flex-1 font-light">
