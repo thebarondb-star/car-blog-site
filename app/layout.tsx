@@ -10,6 +10,12 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Dr.Rent - 투명한 장기렌트 가격비교",
   description: "닥터렌트와 함께 딜러 수수료 없는 진짜 원가 견적을 확인하세요.",
+  // ✅ [추가됨] 네이버 서치어드바이저 소유권 확인
+  verification: {
+    other: {
+      "naver-site-verification": "42cc982e2b7b534948cd64701ca18164819cb6b7",
+    },
+  },
 };
 
 export default function RootLayout({
@@ -20,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
-        {/* ✅ [유지] 구글 태그 매니저 (삭제되지 않도록 복구함) */}
+        {/* ✅ [유지] 구글 태그 매니저 (기존 코드 그대로 유지) */}
         <Script
           id="gtm-script"
           strategy="afterInteractive"
@@ -36,7 +42,7 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
-        {/* ✅ [유지] 구글 태그 매니저 NoScript */}
+        {/* ✅ [유지] 구글 태그 매니저 NoScript (기존 코드 그대로 유지) */}
         <noscript>
           <iframe
             src="https://www.googletagmanager.com/ns.html?id=GTM-TZ7J7B5T"
@@ -49,7 +55,7 @@ export default function RootLayout({
         <header className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all duration-300">
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             
-            {/* ✅ [수정됨] 이미지 로고 삭제 -> 텍스트 로고로 변경 */}
+            {/* ✅ [유지] 텍스트 로고 Dr.Rent */}
             <Link 
               href="/" 
               className="text-3xl font-black tracking-tighter text-slate-900 hover:text-blue-600 transition-colors"
@@ -57,7 +63,7 @@ export default function RootLayout({
               Dr.Rent
             </Link>
 
-            {/* ✅ [유지] 기존 버튼 디자인 (화살표 아이콘 포함) */}
+            {/* ✅ [유지] 견적 진단하기 버튼 */}
             <Link href="/consult" className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-blue-600 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2">
               내 견적 진단하기 <ArrowRight className="w-4 h-4" />
             </Link>
