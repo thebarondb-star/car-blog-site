@@ -3,11 +3,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Save, Upload, Loader2, Image as ImageIcon, Code, Type } from "lucide-react";
+import { ArrowLeft, Save, Upload, Loader2, Image as ImageIcon, Code, Type, Zap } from "lucide-react"; // Zap 아이콘 추가
 import Link from "next/link";
 import Image from "next/image";
 
-const CATEGORIES = ["닥터렌트는?", "호갱탈출", "장기렌트정보"];
+// ✅ 카테고리 추가됨
+const CATEGORIES = ["닥터렌트는?", "호갱탈출", "장기렌트정보", "특가차량리스트"];
 
 export default function AdminWrite() {
   const router = useRouter();
@@ -188,9 +189,20 @@ export default function AdminWrite() {
           <hr className="border-slate-100" />
 
           <div className="relative">
-            <div className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-100 py-4 flex justify-between items-center mb-4">
+            <div className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-100 py-4 flex flex-col md:flex-row justify-between items-center mb-4 gap-2">
               <label className="block text-sm font-bold text-slate-700">본문 작성</label>
+              
               <div className="flex items-center gap-3">
+                {/* ✅ 이미지 용량 줄이기 링크 버튼 추가 */}
+                <a 
+                  href="https://www.iloveimg.com/ko/compress-image" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-green-50 text-green-600 hover:bg-green-100 border border-green-200 transition"
+                >
+                  <Zap className="w-3 h-3" /> ⚡ 용량 줄이기
+                </a>
+
                 <label className={`cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-blue-200 ${uploadingBody ? "bg-slate-100" : "bg-blue-50 text-blue-600 hover:bg-blue-100"}`}>
                   {uploadingBody ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />} 본문 사진+설명
                   <input type="file" accept="image/*" onChange={handleBodyImageUpload} className="hidden" disabled={uploadingBody} />

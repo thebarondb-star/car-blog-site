@@ -20,6 +20,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
+        {/* ✅ [유지] 구글 태그 매니저 (삭제되지 않도록 복구함) */}
         <Script
           id="gtm-script"
           strategy="afterInteractive"
@@ -35,6 +36,7 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
+        {/* ✅ [유지] 구글 태그 매니저 NoScript */}
         <noscript>
           <iframe
             src="https://www.googletagmanager.com/ns.html?id=GTM-TZ7J7B5T"
@@ -46,15 +48,16 @@ export default function RootLayout({
 
         <header className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all duration-300">
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 group">
-              <img 
-                src="/logo_dr.png" 
-                alt="Dr.Rent 로고" 
-                className="h-9 w-auto object-contain"
-              />
-              {/* ✅ [수정됨] 글씨 색상을 로고와 어울리는 진한 파랑(text-blue-900)으로 변경 */}
-              <span className="font-bold text-xl text-blue-900 tracking-tight">Dr.Rent</span>
+            
+            {/* ✅ [수정됨] 이미지 로고 삭제 -> 텍스트 로고로 변경 */}
+            <Link 
+              href="/" 
+              className="text-3xl font-black tracking-tighter text-slate-900 hover:text-blue-600 transition-colors"
+            >
+              Dr.Rent
             </Link>
+
+            {/* ✅ [유지] 기존 버튼 디자인 (화살표 아이콘 포함) */}
             <Link href="/consult" className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-blue-600 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2">
               내 견적 진단하기 <ArrowRight className="w-4 h-4" />
             </Link>

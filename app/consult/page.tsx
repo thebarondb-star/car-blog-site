@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { Car, CheckCircle2, Loader2, Upload, X, ShieldCheck, ExternalLink } from "lucide-react";
+// Car 아이콘 import 제거함 (사용하지 않음)
+import { CheckCircle2, Loader2, Upload, X, ShieldCheck, ExternalLink } from "lucide-react";
 
 export default function ConsultPage() {
   const router = useRouter();
@@ -104,9 +105,9 @@ export default function ConsultPage() {
     <>
       <div className="max-w-2xl mx-auto py-12 px-4">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center p-3 bg-blue-100 rounded-full mb-4">
-            <Car className="w-8 h-8 text-blue-600" />
-          </div>
+          {/* ✅ [수정됨] 여기에 있던 자동차 아이콘(Car)과 파란 동그라미 배경을 삭제했습니다.
+              나머지 제목과 설명 텍스트는 그대로 유지됩니다.
+          */}
           <h1 className="text-3xl font-bold mb-2 text-slate-900">무료 견적 상세 분석</h1>
           <p className="text-slate-500">
             받으신 견적서 사진을 올려주시면<br />

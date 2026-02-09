@@ -1,16 +1,15 @@
 import Link from "next/link";
-import { FileText, ChevronRight, ShieldCheck, Zap, Calculator } from "lucide-react";
+import { FileText, ChevronRight, ShieldCheck, Zap, Calculator, Siren } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export const revalidate = 0; 
 
-// 1. 카테고리 목록 (★ 순서 고정)
-// DB에서 가져오지 않고, 원하시는 순서대로 직접 지정했습니다.
+// 1. 카테고리 목록 수정 (특가차량리스트를 맨 뒤로 이동)
 async function getCategories() {
-  return ["전체", "닥터렌트는?", "호갱탈출", "장기렌트정보"];
+  return ["전체", "닥터렌트는?", "호갱탈출", "장기렌트정보", "특가차량리스트"];
 }
 
-// 2. 글 목록 가져오기
+// 2. 글 목록 가져오기 (필터 로직 유지)
 async function getPosts(category?: string) {
   let query = supabase
     .from('posts')
@@ -18,7 +17,11 @@ async function getPosts(category?: string) {
     .order('id', { ascending: false });
 
   if (category && category !== "전체") {
+    // 특정 카테고리를 눌렀을 때: 그 카테고리만 보여줌
     query = query.eq('category', category);
+  } else {
+    // "전체" 보기일 때: '특가차량리스트'는 숨김 (neq: not equal)
+    query = query.neq('category', '특가차량리스트');
   }
 
   const { data: posts, error } = await query;
@@ -34,7 +37,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
   const params = await searchParams;
   const selectedCategory = params.category || "전체";
 
-  // 카테고리는 이제 고정된 리스트를 바로 사용합니다.
   const categories = await getCategories();
   const posts = await getPosts(selectedCategory);
 
@@ -60,7 +62,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">진짜 원가 견적</span>을 공개합니다
           </h1>
           
-          {/* 에러 수정됨: p 태그 안에 p 태그 삭제 -> br 태그 사용 */}
           <p className="text-slate-400 mb-10 text-lg md:text-xl max-w-2xl mx-auto font-light">
             아직도 월 렌탈료만 보고 계약하시나요?<br />
             현직 전문가가 분석한 <span className="text-white font-medium">투명한 견적 리포트</span>를 무료로 받아보세요.
@@ -69,7 +70,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/consult" className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-500 transition shadow-lg shadow-blue-900/50 flex items-center justify-center gap-2">
+            <Link href="/consult" className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-50 transition shadow-lg shadow-blue-900/50 flex items-center justify-center gap-2">
               <Calculator className="w-5 h-5" />
               무료 견적 분석 신청
             </Link>
@@ -111,13 +112,17 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
                   href={category === "전체" ? "/" : `/?category=${category}`}
                   scroll={false}
                   className={`
-                    whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 border
+                    whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 border flex items-center gap-1
                     ${selectedCategory === category 
                       ? "bg-slate-900 text-white border-slate-900 shadow-lg scale-105" 
-                      : "bg-white text-slate-500 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
+                      : category === "특가차량리스트" // 특가 리스트 디자인 (빨간색 강조)
+                        ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+                        : "bg-white text-slate-500 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
                     }
                   `}
                 >
+                  {/* 특가차량리스트일 때만 사이렌 아이콘 표시 */}
+                  {category === "특가차량리스트" && <Siren className="w-4 h-4" />}
                   {category}
                 </Link>
               ))}
@@ -144,7 +149,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
                     )}
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition"></div>
                     <div className="absolute bottom-4 left-4">
-                      <span className="bg-white/90 backdrop-blur text-slate-900 text-[10px] font-bold px-2 py-1 rounded shadow-sm">
+                      {/* 특가차량리스트일 때 배지 색상 변경 */}
+                      <span className={`
+                        backdrop-blur text-[10px] font-bold px-2 py-1 rounded shadow-sm
+                        ${post.category === '특가차량리스트' ? 'bg-red-600 text-white' : 'bg-white/90 text-slate-900'}
+                      `}>
                         {post.category}
                       </span>
                     </div>
