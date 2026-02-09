@@ -3,11 +3,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Save, Upload, Loader2, Image as ImageIcon, Code, Type, Zap } from "lucide-react"; // Zap 아이콘 추가
+import { ArrowLeft, Save, Upload, Loader2, Image as ImageIcon, Code, Type, Zap } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
-// ✅ 카테고리 추가됨
 const CATEGORIES = ["닥터렌트는?", "호갱탈출", "장기렌트정보", "특가차량리스트"];
 
 export default function AdminWrite() {
@@ -27,6 +26,7 @@ export default function AdminWrite() {
     title: "",
     category: CATEGORIES[0],
     desc_text: "",
+    priority: "", // ✨ 순서 필드 추가 (문자열로 받아서 숫자로 변환)
     content: "",
     image_url: "",
   });
@@ -42,29 +42,18 @@ export default function AdminWrite() {
     }
   };
 
-  // ✨ [핵심 수정] 이미지 클릭 시 '화면 표시 크기'만 조절 (원본 유지)
+  // 이미지 사이즈 조절 로직 (유지)
   const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
-
     if (target.tagName === "IMG") {
       const img = target as HTMLImageElement;
-      
-      // 현재 적용된 화면 크기 가져오기
       const currentWidth = img.style.width || "100%";
-      
-      const newWidth = prompt(
-        "화면에 보여질 크기를 입력하세요 (원본은 유지됨)\n예: 50%, 80%, 300px", 
-        currentWidth
-      );
-
+      const newWidth = prompt("화면에 보여질 크기를 입력하세요 (원본은 유지됨)\n예: 50%, 80%, 300px", currentWidth);
       if (newWidth) {
-        // 스타일만 변경 (원본 파일은 그대로)
         img.style.width = newWidth;
-        // 중앙 정렬을 위해 margin auto 추가 가능하지만, 일단 크기만 조절
         handleVisualInput(); 
       }
     }
-    
     updateCursorPosition();
   };
 
@@ -113,7 +102,6 @@ export default function AdminWrite() {
       if (error) throw error;
       const { data } = supabase.storage.from("consult_photos").getPublicUrl(filePath);
       
-      // ✨ [수정] 기본값 width: 100% (나중에 클릭해서 줄일 수 있음)
       const imgTag = `
         <figure class="my-8 text-center">
           <img src="${data.publicUrl}" alt="${altText}" style="width: 100%; max-width: 100%;" class="rounded-xl shadow-md inline-block transition-all cursor-pointer" />
@@ -157,8 +145,19 @@ export default function AdminWrite() {
       setLoading(true);
       const today = new Date();
       const dateText = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
+      
+      // ✨ 순서 저장 로직 (입력 없으면 9999)
+      const priorityValue = formData.priority ? parseInt(formData.priority) : 9999;
+
       const { error } = await supabase.from("posts").insert([{
-        title: formData.title, category: formData.category, desc_text: formData.desc_text, content: formData.content, image_url: formData.image_url, date_text: dateText, color_class: "bg-slate-800"
+        title: formData.title, 
+        category: formData.category, 
+        desc_text: formData.desc_text, 
+        priority: priorityValue, // DB에 저장
+        content: formData.content, 
+        image_url: formData.image_url, 
+        date_text: dateText, 
+        color_class: "bg-slate-800"
       }]);
       if (error) throw error;
       alert("등록 성공!"); router.push("/"); router.refresh();
@@ -179,8 +178,20 @@ export default function AdminWrite() {
           <hr className="border-slate-100" />
 
           <div className="space-y-6">
-            <div><label className="block text-sm font-bold text-slate-700 mb-2">카테고리</label><div className="flex flex-wrap gap-2">{CATEGORIES.map((cat) => (<button key={cat} type="button" onClick={() => setFormData((prev) => ({ ...prev, category: cat }))} className={`px-4 py-2 rounded-lg text-sm font-bold border ${formData.category === cat ? "bg-slate-900 text-white" : "bg-white text-slate-500"}`}>{cat}</button>))}</div></div>
+            <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex-1">
+                    <label className="block text-sm font-bold text-slate-700 mb-2">카테고리</label>
+                    <div className="flex flex-wrap gap-2">{CATEGORIES.map((cat) => (<button key={cat} type="button" onClick={() => setFormData((prev) => ({ ...prev, category: cat }))} className={`px-4 py-2 rounded-lg text-sm font-bold border ${formData.category === cat ? "bg-slate-900 text-white" : "bg-white text-slate-500"}`}>{cat}</button>))}</div>
+                </div>
+                {/* ✨ 순서 입력칸 추가 */}
+                <div className="w-full md:w-32">
+                    <label className="block text-sm font-bold text-slate-700 mb-2">노출 순서</label>
+                    <input type="number" name="priority" value={formData.priority} onChange={handleChange} placeholder="예: 1" className="w-full px-4 py-2 rounded-xl border font-bold text-center" />
+                </div>
+            </div>
+            
             <div><label className="block text-sm font-bold text-slate-700 mb-2">제목</label><input type="text" name="title" value={formData.title} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border font-bold text-lg" /></div>
+            
             <div className="grid md:grid-cols-2 gap-6">
                <div><label className="block text-sm font-bold text-slate-700 mb-2">대표 썸네일</label><div className="flex items-center gap-4"><label className="cursor-pointer bg-slate-100 px-4 py-3 rounded-xl flex items-center gap-2 text-sm font-bold">{uploadingThumbnail ? <Loader2 className="animate-spin w-4 h-4"/> : <Upload className="w-4 h-4"/>} 썸네일 업로드<input type="file" accept="image/*" onChange={handleThumbnailUpload} className="hidden" /></label>{formData.image_url && <img src={formData.image_url} className="w-16 h-16 rounded-lg object-cover border" />}</div></div>
                <div><label className="block text-sm font-bold text-slate-700 mb-2">요약글</label><textarea name="desc_text" value={formData.desc_text} onChange={handleChange} className="w-full px-4 py-2 rounded-xl border h-16 resize-none" /></div>
@@ -193,7 +204,6 @@ export default function AdminWrite() {
               <label className="block text-sm font-bold text-slate-700">본문 작성</label>
               
               <div className="flex items-center gap-3">
-                {/* ✅ 이미지 용량 줄이기 링크 버튼 추가 */}
                 <a 
                   href="https://www.iloveimg.com/ko/compress-image" 
                   target="_blank" 
@@ -218,7 +228,6 @@ export default function AdminWrite() {
               <div 
                 ref={editorRef} 
                 contentEditable 
-                // ✨ 클릭 시 사이즈 조절 (뷰어에서는 원본 유지)
                 onClick={handleEditorClick} 
                 onKeyUp={updateCursorPosition}
                 onBlur={updateCursorPosition}
@@ -226,7 +235,7 @@ export default function AdminWrite() {
                 className="w-full min-h-[500px] p-6 rounded-xl border border-slate-200 prose prose-slate max-w-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
                 style={{ lineHeight: "1.8" }} 
               />
-              <p className="text-xs text-slate-400 mt-2 text-right">💡 이미지를 클릭하여 '화면 표시 크기'를 줄일 수 있습니다. (확대 시엔 원본 화질)</p>
+              <p className="text-xs text-slate-400 mt-2 text-right">💡 이미지를 클릭하여 '화면 표시 크기'를 줄일 수 있습니다.</p>
             </div>
 
             <div className={mode === "html" ? "block" : "hidden"}>

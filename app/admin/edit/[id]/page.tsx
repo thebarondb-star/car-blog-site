@@ -7,7 +7,6 @@ import { ArrowLeft, Save, Upload, Loader2, Image as ImageIcon, Code, Type, Exter
 import Link from "next/link";
 import Image from "next/image";
 
-// ✅ 카테고리 추가됨
 const CATEGORIES = ["닥터렌트는?", "호갱탈출", "장기렌트정보", "특가차량리스트"];
 
 export default function AdminEdit({ params }: { params: Promise<{ id: string }> }) {
@@ -29,6 +28,7 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
     title: "",
     category: CATEGORIES[0],
     desc_text: "",
+    priority: "", // ✨ 순서 필드
     content: "",
     image_url: "",
   });
@@ -39,7 +39,15 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
         const { data, error } = await supabase.from("posts").select("*").eq("id", id).single();
         if (error) throw error;
         if (data) {
-          setFormData({ password: "", title: data.title, category: data.category, desc_text: data.desc_text, content: data.content, image_url: data.image_url });
+          setFormData({ 
+            password: "", 
+            title: data.title, 
+            category: data.category, 
+            desc_text: data.desc_text, 
+            priority: data.priority ? String(data.priority) : "", // 숫자 -> 문자열 변환
+            content: data.content, 
+            image_url: data.image_url 
+          });
           if (editorRef.current) editorRef.current.innerHTML = data.content;
         }
       } catch (err) { alert("글 불러오기 실패"); router.push("/"); } finally { setFetching(false); }
@@ -61,11 +69,7 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
     if (target.tagName === "IMG") {
       const img = target as HTMLImageElement;
       const currentWidth = img.style.width || "100%";
-      const newWidth = prompt(
-        "화면에 보여질 크기를 입력하세요 (원본은 유지됨)\n예: 50%, 80%, 300px", 
-        currentWidth
-      );
-
+      const newWidth = prompt("화면에 보여질 크기를 입력하세요 (원본은 유지됨)\n예: 50%, 80%, 300px", currentWidth);
       if (newWidth) {
         img.style.width = newWidth;
         handleVisualInput();
@@ -149,8 +153,17 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
 
     try {
       setLoading(true);
+      
+      // ✨ 순서 수정 로직
+      const priorityValue = formData.priority ? parseInt(formData.priority) : 9999;
+
       const { error } = await supabase.from("posts").update({
-          title: formData.title, category: formData.category, desc_text: formData.desc_text, content: formData.content, image_url: formData.image_url,
+          title: formData.title, 
+          category: formData.category, 
+          desc_text: formData.desc_text, 
+          priority: priorityValue, // 순서 업데이트
+          content: formData.content, 
+          image_url: formData.image_url,
         }).eq("id", id);
       if (error) throw error;
       alert("수정 완료!"); router.push(`/posts/${id}`); router.refresh();
@@ -170,7 +183,18 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
           <div><label className="block text-sm font-bold text-slate-700 mb-2">관리자 비밀번호 🔒</label><input type="password" name="password" value={formData.password} onChange={handleChange} placeholder="수정하려면 입력하세요" autoComplete="new-password" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500" /></div>
           <hr className="border-slate-100" />
           <div className="space-y-6">
-            <div><label className="block text-sm font-bold text-slate-700 mb-2">카테고리</label><div className="flex flex-wrap gap-2">{CATEGORIES.map((cat) => (<button key={cat} type="button" onClick={() => setFormData((prev) => ({ ...prev, category: cat }))} className={`px-4 py-2 rounded-lg text-sm font-bold border ${formData.category === cat ? "bg-slate-900 text-white" : "bg-white text-slate-500"}`}>{cat}</button>))}</div></div>
+            <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex-1">
+                    <label className="block text-sm font-bold text-slate-700 mb-2">카테고리</label>
+                    <div className="flex flex-wrap gap-2">{CATEGORIES.map((cat) => (<button key={cat} type="button" onClick={() => setFormData((prev) => ({ ...prev, category: cat }))} className={`px-4 py-2 rounded-lg text-sm font-bold border ${formData.category === cat ? "bg-slate-900 text-white" : "bg-white text-slate-500"}`}>{cat}</button>))}</div>
+                </div>
+                {/* ✨ 순서 입력칸 추가 */}
+                <div className="w-full md:w-32">
+                    <label className="block text-sm font-bold text-slate-700 mb-2">노출 순서</label>
+                    <input type="number" name="priority" value={formData.priority} onChange={handleChange} placeholder="예: 1" className="w-full px-4 py-2 rounded-xl border font-bold text-center" />
+                </div>
+            </div>
+
             <div><label className="block text-sm font-bold text-slate-700 mb-2">제목</label><input type="text" name="title" value={formData.title} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border font-bold text-lg" /></div>
           </div>
           <div className="grid md:grid-cols-2 gap-6">
@@ -184,7 +208,6 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
               <label className="block text-sm font-bold text-slate-700">본문 수정</label>
               
               <div className="flex items-center gap-3">
-                {/* ✅ 이미지 용량 줄이기 링크 버튼 추가 */}
                 <a 
                   href="https://www.iloveimg.com/ko/compress-image" 
                   target="_blank" 
@@ -209,7 +232,6 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
               <div 
                 ref={editorRef} 
                 contentEditable 
-                // ✨ 클릭 시 사이즈 조절
                 onClick={handleEditorClick}
                 onKeyUp={updateCursorPosition}
                 onBlur={updateCursorPosition}
@@ -217,7 +239,7 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
                 className="w-full min-h-[500px] p-6 rounded-xl border border-slate-200 prose prose-slate max-w-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
                 style={{ lineHeight: "1.8" }} 
               />
-              <p className="text-xs text-slate-400 mt-2 text-right">💡 이미지를 클릭하여 '화면 표시 크기'를 줄일 수 있습니다. (확대 시엔 원본 화질)</p>
+              <p className="text-xs text-slate-400 mt-2 text-right">💡 이미지를 클릭하여 '화면 표시 크기'를 줄일 수 있습니다.</p>
             </div>
 
             <div className={mode === "html" ? "block" : "hidden"}>

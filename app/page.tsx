@@ -4,23 +4,23 @@ import { supabase } from "@/lib/supabase";
 
 export const revalidate = 0; 
 
-// 1. 카테고리 목록 수정 (특가차량리스트를 맨 뒤로 이동)
+// 1. 카테고리 목록
 async function getCategories() {
   return ["전체", "닥터렌트는?", "호갱탈출", "장기렌트정보", "특가차량리스트"];
 }
 
-// 2. 글 목록 가져오기 (필터 로직 유지)
+// 2. 글 목록 가져오기 (✨ 정렬 로직 수정됨)
 async function getPosts(category?: string) {
   let query = supabase
     .from('posts')
     .select('*')
+    // ✨ 1순위: priority (오름차순 1,2,3...), 2순위: id (최신순)
+    .order('priority', { ascending: true }) 
     .order('id', { ascending: false });
 
   if (category && category !== "전체") {
-    // 특정 카테고리를 눌렀을 때: 그 카테고리만 보여줌
     query = query.eq('category', category);
   } else {
-    // "전체" 보기일 때: '특가차량리스트'는 숨김 (neq: not equal)
     query = query.neq('category', '특가차량리스트');
   }
 
@@ -115,13 +115,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
                     whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 border flex items-center gap-1
                     ${selectedCategory === category 
                       ? "bg-slate-900 text-white border-slate-900 shadow-lg scale-105" 
-                      : category === "특가차량리스트" // 특가 리스트 디자인 (빨간색 강조)
+                      : category === "특가차량리스트" 
                         ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
                         : "bg-white text-slate-500 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
                     }
                   `}
                 >
-                  {/* 특가차량리스트일 때만 사이렌 아이콘 표시 */}
                   {category === "특가차량리스트" && <Siren className="w-4 h-4" />}
                   {category}
                 </Link>
@@ -149,7 +148,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
                     )}
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition"></div>
                     <div className="absolute bottom-4 left-4">
-                      {/* 특가차량리스트일 때 배지 색상 변경 */}
                       <span className={`
                         backdrop-blur text-[10px] font-bold px-2 py-1 rounded shadow-sm
                         ${post.category === '특가차량리스트' ? 'bg-red-600 text-white' : 'bg-white/90 text-slate-900'}
@@ -160,6 +158,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
                   </div>
                   <div className="p-6 flex flex-col flex-1">
                     <h3 className="font-bold text-lg mb-3 leading-snug text-slate-800 group-hover:text-blue-600 transition">
+                      {/* 순서 번호 표시 (관리자 확인용, 필요 없으면 지우셔도 됩니다) */}
+                      {post.priority && post.priority !== 9999 && (
+                        <span className="text-xs text-red-500 mr-1">[{post.priority}]</span>
+                      )}
                       {post.title}
                     </h3>
                     <p className="text-slate-500 text-sm line-clamp-2 mb-4 flex-1 font-light">
