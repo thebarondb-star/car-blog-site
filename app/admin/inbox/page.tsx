@@ -193,14 +193,14 @@ export default function InboxPage() {
                           onChange={(e) => updateStatus(item.id, e.target.value)}
                           className={`
                             px-2 py-1 rounded-md text-xs font-bold border outline-none cursor-pointer appearance-none text-center
-                            ${item.status === '완료' ? 'bg-slate-100 text-slate-500 border-slate-200' : 
-                              item.status === '진행중' ? 'bg-blue-50 text-blue-600 border-blue-200' : 
+                            ${item.status === '다운완료' ? 'bg-slate-100 text-slate-500 border-slate-200' : 
+                              item.status === '진행중체크' ? 'bg-blue-50 text-blue-600 border-blue-200' : 
                               'bg-red-50 text-red-600 border-red-200'}
                           `}
                         >
                           <option value="신규">신규</option>
-                          <option value="진행중">진행중</option>
-                          <option value="완료">완료</option>
+                          <option value="진행중체크">진행중체크</option>
+                          <option value="다운완료">다운완료</option>
                         </select>
                       </td>
 
