@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Save, Upload, Loader2, Image as ImageIcon, Code, Type, ExternalLink, Zap, Lock } from "lucide-react";
+import { ArrowLeft, Save, Upload, Loader2, Image as ImageIcon, Code, Type, ExternalLink, Zap } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -13,10 +13,10 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
   const { id } = use(params);
   const router = useRouter();
 
-  // 🔐 보안 상태 관리
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passwordInput, setPasswordInput] = useState("");
-  const [authError, setAuthError] = useState("");
+  // 🔐 보안 상태 관리 (로그인 로직 제거됨)
+  // const [isAuthenticated, setIsAuthenticated] = useState(false); <- 제거
+  // const [passwordInput, setPasswordInput] = useState(""); <- 제거
+  // const [authError, setAuthError] = useState(""); <- 제거
 
   const [mode, setMode] = useState<"visual" | "html">("visual");
   const editorRef = useRef<HTMLDivElement>(null);
@@ -52,25 +52,17 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
             content: data.content, 
             image_url: data.image_url 
           });
-          // 에디터에 내용 반영
-          if (isAuthenticated && editorRef.current) {
+          // 에디터에 내용 반영 (로그인 체크 없이 바로 실행)
+          if (editorRef.current) {
             editorRef.current.innerHTML = data.content;
           }
         }
       } catch (err) { alert("글 불러오기 실패"); router.push("/"); } finally { setFetching(false); }
     };
     fetchPost();
-  }, [id, router, isAuthenticated]); // isAuthenticated가 true가 되면 에디터 내용을 채움
+  }, [id, router]); // isAuthenticated 의존성 제거
 
-  // 🔐 로그인 핸들러
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passwordInput === "dlrns6632!") {
-      setIsAuthenticated(true);
-    } else {
-      setAuthError("비밀번호가 일치하지 않습니다.");
-    }
-  };
+  // 🔐 로그인 핸들러 (제거됨)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -170,14 +162,13 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
     try {
       setLoading(true);
       
-      // ✅ 확실하게 숫자로 변환
       const priorityNum = formData.priority ? Number(formData.priority) : 9999;
 
       const { error } = await supabase.from("posts").update({
           title: formData.title, 
           category: formData.category, 
           desc_text: formData.desc_text, 
-          priority: priorityNum, // 👈 숫자로 업데이트
+          priority: priorityNum, 
           content: formData.content, 
           image_url: formData.image_url,
         }).eq("id", id);
@@ -193,45 +184,10 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
     }
   };
 
-  // 🔒 화면 1: 관리자 확인
-  if (!isAuthenticated) {
-    if (fetching) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin w-8 h-8 text-blue-600"/></div>;
+  // ✅ 로딩 중일 때 표시 (잠금 화면 로직은 삭제됨)
+  if (fetching) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin w-8 h-8 text-blue-600"/></div>;
 
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="bg-white max-w-sm w-full p-8 rounded-2xl shadow-xl border border-slate-100 text-center">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-500">
-            <Lock className="w-8 h-8" />
-          </div>
-          <h1 className="text-xl font-bold text-slate-900 mb-2">글 수정하기</h1>
-          <p className="text-slate-500 text-sm mb-6">글을 수정하려면 관리자 확인이 필요합니다.</p>
-          
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input 
-              type="password" 
-              value={passwordInput}
-              onChange={(e) => setPasswordInput(e.target.value)}
-              placeholder=""
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 outline-none text-center font-bold text-lg"
-              autoFocus
-              autoComplete="new-password"
-            />
-            {authError && <p className="text-red-500 text-xs font-bold">{authError}</p>}
-            <div className="flex gap-2">
-              <button type="button" onClick={() => router.push(`/posts/${id}`)} className="flex-1 py-3 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-xl border border-slate-200 transition">
-                취소
-              </button>
-              <button type="submit" className="flex-[2] bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition">
-                확인
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-  // 🔓 화면 2: 수정 에디터 (비밀번호 입력칸 삭제됨)
+  // 🔓 화면 2: 수정 에디터 (바로 노출)
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-10">
       <div className="max-w-4xl mx-auto">
@@ -241,8 +197,6 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
         </div>
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-8">
           
-          {/* 비밀번호 입력칸 삭제됨 */}
-
           <div className="space-y-6">
             <div className="flex flex-col md:flex-row gap-6">
                 <div className="flex-1">
