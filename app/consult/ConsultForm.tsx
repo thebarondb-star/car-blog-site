@@ -100,21 +100,26 @@ export default function ConsultForm() {
 
   return (
     <div className="max-w-2xl mx-auto py-12 px-4">
-      {/* 헤더 섹션 */}
+      {/* 헤더 섹션 (수정됨) */}
       <div className="text-center mb-10">
-        <h1 className="text-3xl font-bold mb-2 text-slate-900">무료 견적 상세 분석</h1>
-        <p className="text-slate-500">
-          받으신 견적서 사진을 올려주시면<br />
-          숨어있는 수수료와 거품을 찾아드립니다.
-        </p>
+        <h1 className="text-3xl font-bold mb-4 text-slate-900">견적 상담 및 견적 상세 분석</h1>
         
-        {/* ✅ [추가됨] 퍼플렉시티와 합의한 Thin Content 방어 및 신뢰도 향상 문구 */}
-        <p className="text-blue-600 font-bold mt-3 text-sm md:text-base">
-          단 1분이면 작성 완료! 현직 전문가가 24시간 내에 투명한 진단 결과를 안내해 드립니다.
-        </p>
+        <div className="bg-blue-50/50 p-6 rounded-2xl mb-6">
+          <p className="text-slate-700 font-medium mb-2">
+            "같은 차, 다른 렌탈료. 비밀은 <span className="font-bold text-blue-600">'숨은 딜러 수당'</span>에 있습니다."
+          </p>
+          <p className="text-slate-600 mb-2 leading-relaxed">
+            닥터렌트는 수수료 0원을 넘어,<br className="md:hidden" />
+            영업사원이 남기는 유통 마진까지 전액<br className="md:hidden" />
+            <span className="font-bold text-slate-900"> 돌려드립니다.</span>
+          </p>
+          <p className="text-blue-600 font-bold mt-4">
+            지금 바로 상담신청 남겨보시고 닥터렌트만의 압도적인 차이를 확인하세요.
+          </p>
+        </div>
 
-        <p className="text-red-500 text-sm mt-3 font-bold">
-          ※ 견적분석이 필요하신 분들만 올려주세요(필수사항 아님)
+        <p className="text-red-500 text-sm font-bold bg-red-50 py-2 px-4 rounded-full inline-block">
+          *타사견적서는 필수 업로드 항목이 아닙니다! 단순 견적 문의도 편하게 해주세요~!
         </p>
       </div>
 
@@ -181,7 +186,7 @@ export default function ConsultForm() {
             </div>
 
             <button type="submit" disabled={loading || !agreed} className="w-full bg-blue-600 text-white font-bold text-lg py-4 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed">
-              {loading ? <><Loader2 className="animate-spin w-5 h-5" /> 전송 중...</> : <><CheckCircle2 className="w-5 h-5" /> 무료 분석 신청하기</>}
+              {loading ? <><Loader2 className="animate-spin w-5 h-5" /> 전송 중...</> : <><CheckCircle2 className="w-5 h-5" /> 상담 및 무료 견적 분석 신청하기</>}
             </button>
           </form>
         </div>
@@ -191,7 +196,7 @@ export default function ConsultForm() {
         <ShieldCheck className="w-4 h-4" /> 입력하신 정보는 상담 목적으로만 안전하게 사용됩니다.
       </div>
 
-      {/* 약관 모달 (생략 없이 전문 유지됨) */}
+      {/* 약관 모달 */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
