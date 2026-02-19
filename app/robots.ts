@@ -1,16 +1,18 @@
 import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
+  const baseUrl = 'https://www.dr-rent.net';
+
   return {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: '/admin/', // 관리자 페이지는 검색 수집 제외 (보안상 좋음)
+      disallow: ['/admin/', '/api/'], // 관리자 및 API 페이지 검색 수집 제외 (보안/최적화)
     },
-    // ✅ [수정됨] 사이트맵과 RSS를 배열로 묶어서 둘 다 제공
+    // ✅ 사이트맵과 RSS를 모두 제공하여 구글/네이버 수집 완벽 지원
     sitemap: [
-      'https://www.dr-rent.net/sitemap.xml',
-      'https://www.dr-rent.net/rss.xml',
+      `${baseUrl}/sitemap.xml`,
+      `${baseUrl}/rss.xml`,
     ],
   };
 }
