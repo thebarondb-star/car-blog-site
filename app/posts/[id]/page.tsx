@@ -119,6 +119,25 @@ export default async function PostDetail({ params }: Props) {
           <p className="text-center py-10 text-slate-400">본문 내용을 불러오는 중입니다.</p>
         )}
 
+        {/* ✅ [추가됨] 구조화 데이터 (JSON-LD) 삽입 */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Article",
+              "headline": post.title,
+              "description": post.desc_text,
+              "image": post.image_url,
+              "datePublished": post.created_at,
+              "author": {
+                "@type": "Person",
+                "name": "닥터리"
+              }
+            })
+          }}
+        />
+
       </article>
 
       {/* 다른 글 목록 */}
