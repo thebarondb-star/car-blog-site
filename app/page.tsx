@@ -4,9 +4,15 @@ import { supabase } from "@/lib/supabase";
 
 export const revalidate = 0; 
 
-// 1. 카테고리 목록
+// ✅ 1. 카테고리 목록 수정: 이름과 slug(영어주소)를 매칭한 객체 배열로 변경
 async function getCategories() {
-  return ["전체", "닥터렌트는?", "호갱탈출", "장기렌트정보", "특가차량리스트"];
+  return [
+    { name: "전체", slug: "" },
+    { name: "닥터렌트는?", slug: "about" },
+    { name: "호갱탈출", slug: "hogaeng-escape" },
+    { name: "장기렌트정보", slug: "rent-info" },
+    { name: "특가차량리스트", slug: "special-price" }
+  ];
 }
 
 // 2. 글 목록 가져오기 (정렬 로직 유지)
@@ -104,24 +110,25 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
             <h2 className="text-3xl font-bold text-slate-900 mb-2">Dr.Rent INSIGHT</h2>
             <p className="text-slate-500 mb-8">호갱 탈출을 위한 필수 지식과 노하우</p>
 
+            {/* ✅ 카테고리 렌더링 수정: 객체 배열을 매핑하고 slug를 기반으로 URL 생성 */}
             <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
               {categories.map((category) => (
                 <Link
-                  key={category}
-                  href={category === "전체" ? "/" : `/?category=${category}`}
+                  key={category.name}
+                  href={category.slug === "" ? "/" : `/category/${category.slug}`}
                   scroll={false}
                   className={`
                     whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 border flex items-center gap-1
-                    ${selectedCategory === category 
+                    ${selectedCategory === category.name 
                       ? "bg-slate-900 text-white border-slate-900 shadow-lg scale-105" 
-                      : category === "특가차량리스트" 
+                      : category.name === "특가차량리스트" 
                         ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
                         : "bg-white text-slate-500 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
                     }
                   `}
                 >
-                  {category === "특가차량리스트" && <Siren className="w-4 h-4" />}
-                  {category}
+                  {category.name === "특가차량리스트" && <Siren className="w-4 h-4" />}
+                  {category.name}
                 </Link>
               ))}
             </div>
@@ -138,8 +145,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {posts.map((post: any) => (
-                // ✨ 핵심 수정: href를 `/posts/${post.id}` -> `/posts/${post.slug}` 로 변경
-                // 이제 글을 클릭하면 영어 주소로 이동합니다!
+                // ⚡️ 기존 수정사항 유지: 글 클릭 시 영어 주소로 이동
                 <Link href={`/posts/${post.slug}`} key={post.id} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-slate-100 flex flex-col h-full">
                   <div className="h-48 relative overflow-hidden bg-slate-200">
                     {post.image_url ? (
