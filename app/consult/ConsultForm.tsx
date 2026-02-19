@@ -107,6 +107,12 @@ export default function ConsultForm() {
           받으신 견적서 사진을 올려주시면<br />
           숨어있는 수수료와 거품을 찾아드립니다.
         </p>
+        
+        {/* ✅ [추가됨] 퍼플렉시티와 합의한 Thin Content 방어 및 신뢰도 향상 문구 */}
+        <p className="text-blue-600 font-bold mt-3 text-sm md:text-base">
+          단 1분이면 작성 완료! 현직 전문가가 24시간 내에 투명한 진단 결과를 안내해 드립니다.
+        </p>
+
         <p className="text-red-500 text-sm mt-3 font-bold">
           ※ 견적분석이 필요하신 분들만 올려주세요(필수사항 아님)
         </p>
@@ -185,7 +191,7 @@ export default function ConsultForm() {
         <ShieldCheck className="w-4 h-4" /> 입력하신 정보는 상담 목적으로만 안전하게 사용됩니다.
       </div>
 
-      {/* 약관 모달 - 전문 복구 완료 */}
+      {/* 약관 모달 (생략 없이 전문 유지됨) */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
