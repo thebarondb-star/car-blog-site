@@ -6,19 +6,20 @@ import type { Metadata } from "next";
 import AdminPostControls from "@/components/AdminPostControls";
 import PostContent from "@/components/PostContent"; 
 
+// 페이지 캐싱 방지 (항상 최신글 보여주기)
 export const revalidate = 0;
 
 type Props = {
   params: Promise<{ id: string }>;
 };
 
-// ✨ [핵심 수정] SEO 및 썸네일(Open Graph) 완벽 설정
+// ✨ [SEO 핵심 1] 메타데이터: 검색 결과에 노출되는 제목/설명을 정의합니다.
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   
   const { data: post } = await supabase
     .from('posts')
-    .select('title, desc_text, image_url') // image_url 필수
+    .select('title, desc_text, image_url')
     .eq('id', id)
     .single();
 
@@ -29,28 +30,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   return {
-    // 1. 브라우저 탭 이름 (검색 결과 제목)
-    title: `${post.title} | Dr.Rent`, 
+    // ✅ Dr.Rent -> 닥터렌트 (한글 브랜드명 사용이 SEO에 유리)
+    title: `${post.title} | 닥터렌트`, 
     
-    // 2. 검색 결과 설명 (요약글)
+    // 검색 결과 설명
     description: post.desc_text,
 
-    // 3. 카카오톡/페이스북 공유 설정 (Open Graph)
+    // 카카오톡/페이스북 공유 (Open Graph)
     openGraph: {
       title: post.title,
       description: post.desc_text,
       type: "article",
       url: `/posts/${id}`,
-      // ✨ 여기가 핵심! 썸네일 이미지를 강제로 지정
       images: post.image_url ? [post.image_url] : [], 
     },
 
-    // 4. 트위터/X 공유 설정
+    // 트위터 카드
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description: post.desc_text,
-      images: post.image_url ? [post.image_url] : [],
+      images: post.image_url ? [post.image_url] : [], 
     },
   };
 }
@@ -58,6 +58,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PostDetail({ params }: Props) {
   const { id } = await params;
 
+  // 글 데이터 가져오기
   const { data: post, error } = await supabase
     .from('posts')
     .select('*')
@@ -68,6 +69,7 @@ export default async function PostDetail({ params }: Props) {
     notFound();
   }
 
+  // 함께 읽으면 좋은 글 (최신글 3개)
   const { data: recentPosts } = await supabase
     .from('posts')
     .select('*')
@@ -81,24 +83,26 @@ export default async function PostDetail({ params }: Props) {
       {/* 본문 영역 */}
       <article className="max-w-4xl mx-auto px-4 py-10">
         
-        {/* 카테고리 + 관리자 버튼 영역 */}
+        {/* 카테고리 + 관리자 버튼 영역 (기능 유지) */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
            <span className="inline-block bg-blue-100 text-blue-700 font-bold px-4 py-1.5 rounded-full text-sm hover:bg-blue-200 transition cursor-pointer self-start">
             {post.category}
           </span>
+          {/* ✅ 관리자 컨트롤 (수정/삭제 기능 유지) */}
           <AdminPostControls postId={post.id} />
         </div>
 
-        {/* 제목 */}
-        <h1 className="text-3xl md:text-5xl font-extrabold mb-6 leading-tight text-slate-900">
+        {/* ✨ [SEO 핵심 2] H1 태그: break-keep 추가로 가독성/SEO 동시 확보 */}
+        <h1 className="text-3xl md:text-5xl font-extrabold mb-6 leading-tight text-slate-900 break-keep">
           {post.title}
         </h1>
 
-        {/* 작성일 / 정보 */}
+        {/* 작성일 / 정보 (기능 유지) */}
         <div className="flex items-center gap-4 text-slate-400 text-sm mb-10 border-b border-slate-100 pb-8">
           <div className="flex items-center gap-1">
             <Calendar className="w-4 h-4" />
-            {post.date_text}
+            {/* DB에 date_text가 없으면 created_at을 날짜 형식으로 변환하여 보여줍니다 */}
+            {post.date_text || new Date(post.created_at).toLocaleDateString()}
           </div>
           <div className="flex items-center gap-1">
             <User className="w-4 h-4" />
@@ -106,7 +110,7 @@ export default async function PostDetail({ params }: Props) {
           </div>
         </div>
 
-        {/* 본문 내용 (뷰어 컴포넌트) */}
+        {/* 본문 내용 (뷰어 컴포넌트 유지) */}
         {post.content ? (
           <PostContent content={post.content} />
         ) : (
@@ -115,7 +119,7 @@ export default async function PostDetail({ params }: Props) {
 
       </article>
 
-      {/* 다른 글 목록 */}
+      {/* 다른 글 목록 (기능 유지) */}
       <section className="bg-slate-50 py-16 mt-10 border-t border-slate-200">
         <div className="max-w-4xl mx-auto px-4">
           <h3 className="text-2xl font-bold mb-8 text-slate-900">함께 읽으면 좋은 글</h3>
@@ -123,7 +127,8 @@ export default async function PostDetail({ params }: Props) {
             {recentPosts?.map((item: any) => (
               <Link href={`/posts/${item.id}`} key={item.id} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition group">
                 <div className="h-40 relative bg-slate-200">
-                  {item.image_url && <img src={item.image_url} className="w-full h-full object-cover" />}
+                  {/* ✨ [SEO 핵심 3] 이미지에 alt 속성 추가 (필수) */}
+                  {item.image_url && <img src={item.image_url} className="w-full h-full object-cover" alt={item.title} />}
                   <span className="absolute top-2 left-2 bg-white/90 text-xs font-bold px-2 py-1 rounded">{item.category}</span>
                 </div>
                 <div className="p-4">
@@ -135,7 +140,7 @@ export default async function PostDetail({ params }: Props) {
         </div>
       </section>
 
-      {/* 하단 CTA */}
+      {/* 하단 CTA (기능 유지) */}
       <section className="bg-slate-900 text-white py-16">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h3 className="text-2xl font-bold mb-4">이 정보가 도움이 되셨나요?</h3>
