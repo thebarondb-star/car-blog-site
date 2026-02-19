@@ -9,11 +9,11 @@ async function getCategories() {
   return ["전체", "닥터렌트는?", "호갱탈출", "장기렌트정보", "특가차량리스트"];
 }
 
-// 2. 글 목록 가져오기 (정렬 로직은 유지: 순서 번호 -> 최신순)
+// 2. 글 목록 가져오기 (정렬 로직 유지)
 async function getPosts(category?: string) {
   let query = supabase
     .from('posts')
-    .select('*')
+    .select('*') // 여기서 slug도 같이 가져옵니다
     .order('priority', { ascending: true }) 
     .order('id', { ascending: false });
 
@@ -41,7 +41,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
 
   return (
     <div className="font-sans text-slate-800">
-      {/* 1. 히어로 섹션 */}
+      {/* 1. 히어로 섹션 (디자인 유지) */}
       <section className="relative pt-20 pb-20 px-4 overflow-hidden bg-slate-900 text-white">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
           <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-blue-600/30 rounded-full blur-[120px]"></div>
@@ -77,7 +77,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
         </div>
       </section>
 
-      {/* 2. 신뢰 포인트 */}
+      {/* 2. 신뢰 포인트 (디자인 유지) */}
       <section className="py-16 px-4 -mt-10 relative z-20">
         <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6">
           {[
@@ -138,7 +138,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {posts.map((post: any) => (
-                <Link href={`/posts/${post.id}`} key={post.id} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-slate-100 flex flex-col h-full">
+                // ✨ 핵심 수정: href를 `/posts/${post.id}` -> `/posts/${post.slug}` 로 변경
+                // 이제 글을 클릭하면 영어 주소로 이동합니다!
+                <Link href={`/posts/${post.slug}`} key={post.id} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-slate-100 flex flex-col h-full">
                   <div className="h-48 relative overflow-hidden bg-slate-200">
                     {post.image_url ? (
                       <img src={post.image_url} alt={post.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
@@ -157,7 +159,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
                   </div>
                   <div className="p-6 flex flex-col flex-1">
                     <h3 className="font-bold text-lg mb-3 leading-snug text-slate-800 group-hover:text-blue-600 transition">
-                      {/* ✅ [수정됨] 여기에 있던 빨간색 숫자 표시 코드를 삭제했습니다. */}
                       {post.title}
                     </h3>
                     <p className="text-slate-500 text-sm line-clamp-2 mb-4 flex-1 font-light">
@@ -177,7 +178,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
         </div>
       </section>
 
-      {/* 4. 하단 CTA */}
+      {/* 4. 하단 CTA (디자인 유지) */}
       <section className="py-24 px-4 bg-white">
         <div className="max-w-4xl mx-auto bg-gradient-to-br from-slate-900 to-blue-900 rounded-3xl p-10 md:p-16 text-center text-white shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
@@ -194,7 +195,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
         </div>
       </section>
 
-      {/* 5. 푸터 */}
+      {/* 5. 푸터 (디자인 유지) */}
       <footer className="bg-slate-50 border-t border-slate-200 py-12 px-4 text-sm">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between gap-8 text-slate-500">
           <div>

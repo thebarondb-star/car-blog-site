@@ -1,51 +1,44 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { Calendar, User } from "lucide-react"; 
+import { Calendar, User, ArrowLeft } from "lucide-react"; 
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import AdminPostControls from "@/components/AdminPostControls";
-import PostContent from "@/components/PostContent"; 
+import AdminPostControls from "@/components/AdminPostControls"; // ✅ 기존 기능 유지
+import PostContent from "@/components/PostContent"; // ✅ 기존 기능 유지
 
-// 페이지 캐싱 방지 (항상 최신글 보여주기)
+// 페이지 캐싱 방지
 export const revalidate = 0;
 
 type Props = {
-  params: Promise<{ id: string }>;
+  // 폴더명이 [id]라서 변수명은 id로 들어오지만, 실제로는 slug(영어주소)가 들어옵니다.
+  params: Promise<{ id: string }>; 
 };
 
-// ✨ [SEO 핵심 1] 메타데이터: 검색 결과에 노출되는 제목/설명을 정의합니다.
+// 1. 메타데이터 생성 (SEO) - slug로 조회
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
+  const { id: slug } = await params; // URL에서 slug 가져오기
   
+  // ⚡️ 변경점: id 대신 slug 컬럼으로 조회
   const { data: post } = await supabase
     .from('posts')
     .select('title, desc_text, image_url')
-    .eq('id', id)
+    .eq('slug', slug) 
     .single();
 
   if (!post) {
-    return {
-      title: "글을 찾을 수 없습니다",
-    };
+    return { title: "글을 찾을 수 없습니다" };
   }
 
   return {
-    // ✅ Dr.Rent -> 닥터렌트 (한글 브랜드명 사용이 SEO에 유리)
-    title: `${post.title} | 닥터렌트`, 
-    
-    // 검색 결과 설명
+    title: `${post.title} | 닥터렌트`,
     description: post.desc_text,
-
-    // 카카오톡/페이스북 공유 (Open Graph)
     openGraph: {
       title: post.title,
       description: post.desc_text,
       type: "article",
-      url: `/posts/${id}`,
+      url: `/posts/${slug}`, // 공유 URL도 영어 주소로 설정
       images: post.image_url ? [post.image_url] : [], 
     },
-
-    // 트위터 카드
     twitter: {
       card: "summary_large_image",
       title: post.title,
@@ -56,13 +49,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function PostDetail({ params }: Props) {
-  const { id } = await params;
+  const { id: slug } = await params; // URL 파라미터를 slug로 취급
 
-  // 글 데이터 가져오기
+  // 2. 본문 데이터 가져오기 - slug로 조회
+  // ⚡️ 변경점: id 대신 slug 컬럼으로 조회
   const { data: post, error } = await supabase
     .from('posts')
     .select('*')
-    .eq('id', id)
+    .eq('slug', slug)
     .single();
 
   if (error || !post) {
@@ -73,35 +67,43 @@ export default async function PostDetail({ params }: Props) {
   const { data: recentPosts } = await supabase
     .from('posts')
     .select('*')
-    .neq('id', id) 
+    .neq('id', post.id) // 현재 보고 있는 글은 제외 (ID 기준)
     .order('id', { ascending: false })
     .limit(3);
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-800">
       
+      {/* 상단 네비게이션 (목록으로) */}
+      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-slate-100">
+        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center">
+          <Link href="/" className="flex items-center text-slate-500 hover:text-slate-900 transition font-medium text-sm">
+            <ArrowLeft className="w-4 h-4 mr-1" /> 목록으로
+          </Link>
+        </div>
+      </header>
+
       {/* 본문 영역 */}
       <article className="max-w-4xl mx-auto px-4 py-10">
         
-        {/* 카테고리 + 관리자 버튼 영역 (기능 유지) */}
+        {/* 카테고리 + 관리자 버튼 영역 */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
            <span className="inline-block bg-blue-100 text-blue-700 font-bold px-4 py-1.5 rounded-full text-sm hover:bg-blue-200 transition cursor-pointer self-start">
             {post.category}
           </span>
-          {/* ✅ 관리자 컨트롤 (수정/삭제 기능 유지) */}
+          {/* ✅ 관리자 기능 유지: DB 수정/삭제는 고유 ID를 사용해야 하므로 post.id를 넘깁니다. */}
           <AdminPostControls postId={post.id} />
         </div>
 
-        {/* ✨ [SEO 핵심 2] H1 태그: break-keep 추가로 가독성/SEO 동시 확보 */}
+        {/* 제목 */}
         <h1 className="text-3xl md:text-5xl font-extrabold mb-6 leading-tight text-slate-900 break-keep">
           {post.title}
         </h1>
 
-        {/* 작성일 / 정보 (기능 유지) */}
+        {/* 작성일 / 정보 */}
         <div className="flex items-center gap-4 text-slate-400 text-sm mb-10 border-b border-slate-100 pb-8">
           <div className="flex items-center gap-1">
             <Calendar className="w-4 h-4" />
-            {/* DB에 date_text가 없으면 created_at을 날짜 형식으로 변환하여 보여줍니다 */}
             {post.date_text || new Date(post.created_at).toLocaleDateString()}
           </div>
           <div className="flex items-center gap-1">
@@ -110,7 +112,7 @@ export default async function PostDetail({ params }: Props) {
           </div>
         </div>
 
-        {/* 본문 내용 (뷰어 컴포넌트 유지) */}
+        {/* 본문 내용 (뷰어 유지) */}
         {post.content ? (
           <PostContent content={post.content} />
         ) : (
@@ -119,17 +121,17 @@ export default async function PostDetail({ params }: Props) {
 
       </article>
 
-      {/* 다른 글 목록 (기능 유지) */}
+      {/* 다른 글 목록 */}
       <section className="bg-slate-50 py-16 mt-10 border-t border-slate-200">
         <div className="max-w-4xl mx-auto px-4">
           <h3 className="text-2xl font-bold mb-8 text-slate-900">함께 읽으면 좋은 글</h3>
           <div className="grid md:grid-cols-3 gap-6">
             {recentPosts?.map((item: any) => (
-              <Link href={`/posts/${item.id}`} key={item.id} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition group">
+              // ⚡️ 변경점: 추천 글 링크를 '/posts/숫자ID' -> '/posts/영어주소'로 변경
+              <Link href={`/posts/${item.slug}`} key={item.id} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition group">
                 <div className="h-40 relative bg-slate-200">
-                  {/* ✨ [SEO 핵심 3] 이미지에 alt 속성 추가 (필수) */}
                   {item.image_url && <img src={item.image_url} className="w-full h-full object-cover" alt={item.title} />}
-                  <span className="absolute top-2 left-2 bg-white/90 text-xs font-bold px-2 py-1 rounded">{item.category}</span>
+                  <span className="absolute top-2 left-2 bg-white/90 text-xs font-bold px-2 py-1 rounded text-slate-800">{item.category}</span>
                 </div>
                 <div className="p-4">
                   <h4 className="font-bold text-slate-900 line-clamp-2 group-hover:text-blue-600 transition">{item.title}</h4>
@@ -140,7 +142,7 @@ export default async function PostDetail({ params }: Props) {
         </div>
       </section>
 
-      {/* 하단 CTA (기능 유지) */}
+      {/* 하단 CTA (유지) */}
       <section className="bg-slate-900 text-white py-16">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h3 className="text-2xl font-bold mb-4">이 정보가 도움이 되셨나요?</h3>
