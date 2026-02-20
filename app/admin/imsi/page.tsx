@@ -19,8 +19,8 @@ export default function AdminImsi() {
     try {
       const { data, error } = await supabase
         .from("posts")
-        .select("id, title, date_text, category")
-        .eq("is_published", false) // 👈 임시저장 글만 호출
+        .select("id, title, date_text, category, slug") // ✨ slug 필드 추가
+        .eq("is_published", false)
         .order("created_at", { ascending: false });
       
       if (error) throw error;
@@ -88,8 +88,15 @@ export default function AdminImsi() {
                 <div key={post.id} className="flex flex-col md:flex-row items-center justify-between p-4 border border-slate-100 rounded-xl hover:bg-slate-50 transition">
                   <div className="flex flex-col w-full md:w-auto mb-3 md:mb-0">
                     <span className="text-xs font-bold text-blue-600 mb-1">{post.category}</span>
-                    <h2 className="text-lg font-bold text-slate-900 truncate max-w-md">{post.title || "(제목 없음)"}</h2>
-                    <span className="text-xs text-slate-400">{post.date_text} 작성</span>
+                    
+                    {/* ✨ 제목에 Link 컴포넌트를 감싸서 새 창 열기 적용 */}
+                    <Link href={`/posts/${post.slug}`} target="_blank" className="hover:underline">
+                      <h2 className="text-lg font-bold text-slate-900 truncate max-w-md group-hover:text-blue-600 transition">
+                        {post.title || "(제목 없음)"} 🔗
+                      </h2>
+                    </Link>
+                    
+                    <span className="text-xs text-slate-400 mt-1">{post.date_text} 작성</span>
                   </div>
                   <div className="flex gap-2 w-full md:w-auto">
                     <button onClick={() => router.push(`/admin/edit/${post.id}`)} className="flex-1 md:flex-none flex items-center justify-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-lg text-sm transition"><FileEdit className="w-4 h-4"/> 이어서 쓰기</button>
