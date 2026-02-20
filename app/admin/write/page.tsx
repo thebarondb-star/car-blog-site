@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Save, Upload, Loader2, Image as ImageIcon, Code, Type, Zap, Lock, Wand2 } from "lucide-react";
+import { ArrowLeft, Save, Upload, Loader2, Image as ImageIcon, Code, Type, Zap, Lock, Wand2, FileEdit } from "lucide-react";
 import Link from "next/link";
 
 const CATEGORIES = ["닥터렌트는?", "호갱탈출", "장기렌트정보", "특가차량리스트"];
@@ -11,12 +11,10 @@ const CATEGORIES = ["닥터렌트는?", "호갱탈출", "장기렌트정보", "�
 export default function AdminWrite() {
   const router = useRouter();
   
-  // 🔐 보안 상태 관리
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [authError, setAuthError] = useState("");
 
-  // 에디터 상태
   const [mode, setMode] = useState<"visual" | "html">("visual");
   const editorRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -26,10 +24,9 @@ export default function AdminWrite() {
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [uploadingBody, setUploadingBody] = useState(false);
 
-  // ✨ [추가됨] slug 상태 추가
   const [formData, setFormData] = useState({
     title: "",
-    slug: "", // 👈 영어 주소
+    slug: "",
     category: CATEGORIES[0],
     desc_text: "",
     priority: "", 
@@ -37,7 +34,6 @@ export default function AdminWrite() {
     image_url: "",
   });
 
-  // 🔐 로그인 핸들러
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordInput === "dlrns6632!") {
@@ -52,34 +48,21 @@ export default function AdminWrite() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ✨ [새로운 기능] 슬러그 자동 생성/정리 함수
   const handleAutoSlug = () => {
     if (!formData.title) return alert("제목을 먼저 입력해주세요.");
-
-    // 1. 한글이 포함되어 있는지 확인
     const isKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(formData.title);
-
     if (isKorean) {
-      // 한글은 번역 API 없이 영어로 못 바꾸므로, 안전하게 '날짜 기반 ID' 생성
       const timestampSlug = `post-${new Date().toISOString().slice(0,10).replace(/-/g,"")}-${Math.floor(Math.random() * 1000)}`;
       setFormData(prev => ({ ...prev, slug: timestampSlug }));
       alert("⚠️ 한글 제목은 자동 번역이 안 돼요!\n일단 '임시 주소'를 만들어뒀으니, 의미에 맞는 '영어 키워드'로 직접 수정해주세요.\n\n(예: post-2024... -> genesis-price)");
     } else {
-      // 영어 제목이면 -> 소문자 변환, 특수문자 제거, 공백을 하이픈으로 변경
-      const cleanSlug = formData.title
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '') // 영어, 숫자, 공백, 하이픈만 남김
-        .trim()
-        .replace(/\s+/g, '-'); // 공백을 하이픈으로
-      
+      const cleanSlug = formData.title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
       setFormData(prev => ({ ...prev, slug: cleanSlug }));
     }
   };
 
   const handleVisualInput = () => {
-    if (editorRef.current) {
-      setFormData(prev => ({ ...prev, content: editorRef.current?.innerHTML || "" }));
-    }
+    if (editorRef.current) setFormData(prev => ({ ...prev, content: editorRef.current?.innerHTML || "" }));
   };
 
   const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -128,12 +111,9 @@ export default function AdminWrite() {
   const handleBodyImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       if (!e.target.files || e.target.files.length === 0) return;
-      
       const altText = prompt("이미지 설명을 입력하세요 (SEO용):", "사진 설명");
       if (altText === null) return;
-
       setUploadingBody(true);
-
       const file = e.target.files[0];
       const fileName = `body_${Date.now()}.${file.name.split(".").pop()}`;
       const filePath = `consult_photos/${fileName}`;
@@ -158,10 +138,7 @@ export default function AdminWrite() {
           savedRange.current.collapse(false);
           handleVisualInput();
         } else {
-          if (editorRef.current) {
-            editorRef.current.innerHTML += imgTag;
-            handleVisualInput();
-          }
+          if (editorRef.current) { editorRef.current.innerHTML += imgTag; handleVisualInput(); }
         }
       } else {
         const textarea = textareaRef.current;
@@ -174,13 +151,13 @@ export default function AdminWrite() {
     } catch (error: any) { alert("업로드 실패: " + error.message); } finally { setUploadingBody(false); e.target.value = ""; }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // ✨ [수정됨] e.preventDefault 대신 isPublished 상태를 받아 처리
+  const handleSubmit = async (isPublish: boolean) => {
     if (!formData.title || !formData.content) { alert("제목과 내용은 필수입니다."); return; }
-    // ✨ [검사 추가] 슬러그 입력 필수 확인
     if (!formData.slug) { alert("주소(Slug)를 입력해주세요. 자동 생성 버튼을 눌러보세요!"); return; }
 
-    if (!confirm("발행하시겠습니까?")) return;
+    const confirmMsg = isPublish ? "바로 발행하시겠습니까?" : "임시저장 하시겠습니까?";
+    if (!confirm(confirmMsg)) return;
 
     try {
       setLoading(true);
@@ -189,24 +166,35 @@ export default function AdminWrite() {
       
       const priorityNum = formData.priority ? Number(formData.priority) : 9999;
 
-      const { error } = await supabase.from("posts").insert([{
+      const { data, error } = await supabase.from("posts").insert([{
         title: formData.title, 
-        slug: formData.slug, // 👈 DB에 slug 저장
+        slug: formData.slug, 
         category: formData.category, 
         desc_text: formData.desc_text, 
         priority: priorityNum, 
         content: formData.content, 
         image_url: formData.image_url, 
         date_text: dateText, 
-        color_class: "bg-slate-800"
-      }]);
+        color_class: "bg-slate-800",
+        is_published: isPublish // 👈 상태에 맞게 저장
+      }]).select().single(); // 👈 생성된 ID를 가져오기 위해 추가
       
       if (error) throw error;
-      alert("등록 성공!"); 
-      router.push("/"); 
-      router.refresh();
+      
+      if (isPublish) {
+        alert("발행 성공!"); 
+        router.push("/"); 
+        router.refresh();
+      } else {
+        alert("임시저장 완료! 수정 모드에서 계속 작성할 수 있습니다.");
+        // 임시저장 후 Edit 페이지로 이동하여 계속 수정할 수 있게 함
+        if (data && data.id) {
+          router.push(`/admin/edit/${data.id}`);
+        } else {
+          router.push("/admin/imsi");
+        }
+      }
     } catch (error: any) { 
-      // Slug 중복 에러 처리
       if (error.code === '23505') {
         alert("이미 존재하는 주소(Slug)입니다. 다른 주소를 입력해주세요!");
       } else {
@@ -217,35 +205,19 @@ export default function AdminWrite() {
     }
   };
 
-  // 🔒 화면 1: 관리자 확인 화면
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="bg-white max-w-sm w-full p-8 rounded-2xl shadow-xl border border-slate-100 text-center">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-500">
-            <Lock className="w-8 h-8" />
-          </div>
+          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-500"><Lock className="w-8 h-8" /></div>
           <h1 className="text-xl font-bold text-slate-900 mb-2">관리자 글쓰기</h1>
           <p className="text-slate-500 text-sm mb-6">글을 작성하려면 관리자 확인이 필요합니다.</p>
-          
           <form onSubmit={handleLogin} className="space-y-4">
-            <input 
-              type="password" 
-              value={passwordInput}
-              onChange={(e) => setPasswordInput(e.target.value)}
-              placeholder=""
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 outline-none text-center font-bold text-lg"
-              autoFocus
-              autoComplete="new-password"
-            />
+            <input type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 outline-none text-center font-bold text-lg" autoFocus autoComplete="new-password" />
             {authError && <p className="text-red-500 text-xs font-bold">{authError}</p>}
             <div className="flex gap-2">
-              <button type="button" onClick={() => router.push('/')} className="flex-1 py-3 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-xl border border-slate-200 transition">
-                취소
-              </button>
-              <button type="submit" className="flex-[2] bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition">
-                확인
-              </button>
+              <button type="button" onClick={() => router.push('/')} className="flex-1 py-3 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-xl border border-slate-200 transition">취소</button>
+              <button type="submit" className="flex-[2] bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition">확인</button>
             </div>
           </form>
         </div>
@@ -253,7 +225,6 @@ export default function AdminWrite() {
     );
   }
 
-  // 🔓 화면 2: 글쓰기 에디터
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-10">
       <div className="max-w-4xl mx-auto">
@@ -262,10 +233,8 @@ export default function AdminWrite() {
           <h1 className="text-2xl font-bold text-slate-900">관리자 글쓰기</h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-8">
-          
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-8">
           <div className="space-y-6">
-            {/* 카테고리 및 순서 */}
             <div className="flex flex-col md:flex-row gap-6">
                 <div className="flex-1">
                     <label className="block text-sm font-bold text-slate-700 mb-2">카테고리</label>
@@ -277,44 +246,23 @@ export default function AdminWrite() {
                 </div>
             </div>
             
-            {/* 제목 */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">제목</label>
               <input type="text" name="title" value={formData.title} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border font-bold text-lg" placeholder="글 제목을 입력하세요" />
             </div>
 
-            {/* ✨ [UI 추가] 주소(Slug) 입력칸 및 자동 생성 버튼 */}
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-              <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
-                URL 주소 (영어/숫자) <span className="text-red-500 text-xs">* 필수</span>
-              </label>
+              <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">URL 주소 (영어/숫자) <span className="text-red-500 text-xs">* 필수</span></label>
               <div className="flex gap-2">
                 <div className="flex-1 relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">dr-rent.net/posts/</span>
-                  <input 
-                    type="text" 
-                    name="slug" 
-                    value={formData.slug} 
-                    onChange={handleChange} 
-                    className="w-full pl-36 px-4 py-3 rounded-xl border border-slate-200 font-bold text-blue-600 focus:outline-none focus:border-blue-500" 
-                    placeholder="english-title-here" 
-                  />
+                  <input type="text" name="slug" value={formData.slug} onChange={handleChange} className="w-full pl-36 px-4 py-3 rounded-xl border border-slate-200 font-bold text-blue-600 focus:outline-none focus:border-blue-500" placeholder="english-title-here" />
                 </div>
-                <button 
-                  type="button" 
-                  onClick={handleAutoSlug}
-                  className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-800 transition flex items-center gap-2 whitespace-nowrap"
-                >
-                  <Wand2 className="w-4 h-4" /> 자동 완성
-                </button>
+                <button type="button" onClick={handleAutoSlug} className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-800 transition flex items-center gap-2 whitespace-nowrap"><Wand2 className="w-4 h-4" /> 자동 완성</button>
               </div>
-              <p className="text-xs text-slate-400 mt-2 ml-1">
-                💡 <b>팁:</b> 영문 제목을 넣고 '자동 완성'을 누르면 띄어쓰기를 하이픈(-)으로 바꿔줍니다.<br/>
-                (한글 제목일 경우 안전한 임시 주소를 만들어드리니, 의미에 맞는 영어 단어로 수정해주세요.)
-              </p>
+              <p className="text-xs text-slate-400 mt-2 ml-1">💡 <b>팁:</b> 영문 제목을 넣고 '자동 완성'을 누르면 띄어쓰기를 하이픈(-)으로 바꿔줍니다.</p>
             </div>
             
-            {/* 썸네일 및 요약 */}
             <div className="grid md:grid-cols-2 gap-6">
                <div><label className="block text-sm font-bold text-slate-700 mb-2">대표 썸네일</label><div className="flex items-center gap-4"><label className="cursor-pointer bg-slate-100 px-4 py-3 rounded-xl flex items-center gap-2 text-sm font-bold">{uploadingThumbnail ? <Loader2 className="animate-spin w-4 h-4"/> : <Upload className="w-4 h-4"/>} 썸네일 업로드<input type="file" accept="image/*" onChange={handleThumbnailUpload} className="hidden" /></label>{formData.image_url && <img src={formData.image_url} className="w-16 h-16 rounded-lg object-cover border" />}</div></div>
                <div><label className="block text-sm font-bold text-slate-700 mb-2">요약글</label><textarea name="desc_text" value={formData.desc_text} onChange={handleChange} className="w-full px-4 py-2 rounded-xl border h-16 resize-none" /></div>
@@ -322,21 +270,11 @@ export default function AdminWrite() {
           </div>
           <hr className="border-slate-100" />
 
-          {/* 에디터 영역 (기존 유지) */}
           <div className="relative">
             <div className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-100 py-4 flex flex-col md:flex-row justify-between items-center mb-4 gap-2">
               <label className="block text-sm font-bold text-slate-700">본문 작성</label>
-              
               <div className="flex items-center gap-3">
-                <a 
-                  href="https://www.iloveimg.com/ko/compress-image" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-green-50 text-green-600 hover:bg-green-100 border border-green-200 transition"
-                >
-                  <Zap className="w-3 h-3" /> ⚡ 용량 줄이기
-                </a>
-
+                <a href="https://www.iloveimg.com/ko/compress-image" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-green-50 text-green-600 hover:bg-green-100 border border-green-200 transition"><Zap className="w-3 h-3" /> ⚡ 용량 줄이기</a>
                 <label className={`cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-blue-200 ${uploadingBody ? "bg-slate-100" : "bg-blue-50 text-blue-600 hover:bg-blue-100"}`}>
                   {uploadingBody ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />} 본문 사진+설명
                   <input type="file" accept="image/*" onChange={handleBodyImageUpload} className="hidden" disabled={uploadingBody} />
@@ -349,26 +287,34 @@ export default function AdminWrite() {
             </div>
 
             <div className={mode === "visual" ? "block" : "hidden"}>
-              <div 
-                ref={editorRef} 
-                contentEditable 
-                onClick={handleEditorClick} 
-                onKeyUp={updateCursorPosition}
-                onBlur={updateCursorPosition}
-                onInput={handleVisualInput} 
-                className="w-full min-h-[500px] p-6 rounded-xl border border-slate-200 prose prose-slate max-w-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                style={{ lineHeight: "1.8" }} 
-              />
+              <div ref={editorRef} contentEditable onClick={handleEditorClick} onKeyUp={updateCursorPosition} onBlur={updateCursorPosition} onInput={handleVisualInput} className="w-full min-h-[500px] p-6 rounded-xl border border-slate-200 prose prose-slate max-w-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" style={{ lineHeight: "1.8" }} />
               <p className="text-xs text-slate-400 mt-2 text-right">💡 이미지를 클릭하여 '화면 표시 크기'를 줄일 수 있습니다.</p>
             </div>
-
             <div className={mode === "html" ? "block" : "hidden"}>
               <textarea ref={textareaRef} name="content" value={formData.content} onChange={handleChange} className="w-full min-h-[500px] p-4 rounded-xl border border-slate-200 bg-slate-900 text-slate-200 font-mono text-sm leading-relaxed" />
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-100 flex justify-end"><button type="submit" disabled={loading} className="w-full md:w-auto bg-slate-900 hover:bg-slate-800 text-white font-bold px-10 py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2">{loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />} 발행하기</button></div>
-        </form>
+          {/* ✨ [수정됨] 버튼 영역 2개로 분리 */}
+          <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+            <button 
+              type="button" 
+              onClick={(e) => { e.preventDefault(); handleSubmit(false); }} 
+              disabled={loading} 
+              className="w-full md:w-auto bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 font-bold px-8 py-4 rounded-xl transition flex items-center justify-center gap-2"
+            >
+              <FileEdit className="w-5 h-5" /> 임시저장
+            </button>
+            <button 
+              type="button" 
+              onClick={(e) => { e.preventDefault(); handleSubmit(true); }} 
+              disabled={loading} 
+              className="w-full md:w-auto bg-slate-900 hover:bg-slate-800 text-white font-bold px-10 py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2"
+            >
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />} 발행하기
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

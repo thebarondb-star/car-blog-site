@@ -20,6 +20,7 @@ async function getPosts(category?: string) {
   let query = supabase
     .from('posts')
     .select('*') // 여기서 slug도 같이 가져옵니다
+    .eq('is_published', true) // ✨ [추가됨] 임시저장 글 제외, 발행된 글만 메인에 노출
     .order('priority', { ascending: true }) 
     .order('id', { ascending: false });
 

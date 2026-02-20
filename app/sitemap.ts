@@ -10,6 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const { data: posts } = await supabase
     .from('posts')
     .select('slug, created_at, updated_at') // 🎯 updated_at 컬럼 추가 조회
+    .eq('is_published', true) // ✨ [추가됨] 임시저장 글 제외, 발행된 글만 가져오기
     .order('created_at', { ascending: false });
 
   // 2. 블로그 글 동적 사이트맵 생성

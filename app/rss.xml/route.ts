@@ -9,6 +9,7 @@ export async function GET() {
   const { data: posts } = await supabase
     .from('posts')
     .select('title, slug, desc_text, content, created_at, updated_at') // 🎯 updated_at 추가 조회
+    .eq('is_published', true) // ✨ [추가됨] 임시저장 글 제외, 발행된 글만 가져오기
     .order('created_at', { ascending: false })
     .limit(20);
 
