@@ -244,10 +244,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
                   { title: "허위견적서 진단", desc: "허위견적 진단 및 최적견적 제공" },
                   { title: "영업 수수료 0원", desc: "불필요한 딜러 마진 ZERO 최저견적 보장" },
                 ].map((item, idx) => (
-                  <div key={idx} className="bg-white px-5 py-3 rounded-xl shadow-sm border border-slate-100 flex items-center gap-3">
-                    <h3 className="font-bold text-sm text-slate-900 whitespace-nowrap">{item.title}</h3>
-                    <span className="text-slate-300">|</span>
-                    <p className="text-xs text-slate-500 leading-relaxed">{item.desc}</p>
+                  <div key={idx} className="bg-blue-600 px-5 py-3 rounded-xl flex items-center gap-3">
+                    <h3 className="font-bold text-sm text-white whitespace-nowrap">{item.title}</h3>
+                    <span className="text-blue-400">|</span>
+                    <p className="text-xs text-blue-100 leading-relaxed">{item.desc}</p>
                   </div>
                 ))}
               </div>
