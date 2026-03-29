@@ -1,8 +1,31 @@
 import Link from "next/link";
 import { FileText, ChevronRight, ShieldCheck, Zap, Calculator, Siren, Car } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import type { Metadata } from "next";
 
-export const revalidate = 0; 
+export const revalidate = 0;
+
+export const metadata: Metadata = {
+  title: "닥터렌트 | 딜러 수당 없는 장기렌트 원가 견적",
+  description: "장기렌트 딜러 수당·수수료 없이 투명한 원가 견적을 제공합니다. 허위 견적서 진단, 최저가 장기렌트, 전국 24개 렌트사 비교. 지금 무료 견적 신청하세요.",
+  keywords: ["장기렌트", "장기렌트 견적", "장기렌트 최저가", "허위견적 진단", "렌트카 비교", "닥터렌트"],
+  openGraph: {
+    title: "닥터렌트 | 딜러 수당 없는 장기렌트 원가 견적",
+    description: "장기렌트 딜러 수당·수수료 없이 투명한 원가 견적을 제공합니다. 허위 견적서 진단, 최저가 장기렌트 비교.",
+    url: "https://www.dr-rent.net",
+    siteName: "닥터렌트",
+    locale: "ko_KR",
+    type: "website",
+    images: [{ url: "https://www.dr-rent.net/og-image.png", width: 1200, height: 630, alt: "닥터렌트 장기렌트 원가 견적" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "닥터렌트 | 딜러 수당 없는 장기렌트 원가 견적",
+    description: "투명한 원가 견적, 허위 견적서 진단. 지금 무료 견적 신청하세요.",
+    images: ["https://www.dr-rent.net/og-image.png"],
+  },
+  alternates: { canonical: "https://www.dr-rent.net" },
+}; 
 
 // ✅ 1. 카테고리 목록 수정: 이름과 slug(영어주소)를 매칭한 객체 배열로 변경
 async function getCategories() {
