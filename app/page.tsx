@@ -66,35 +66,45 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
 
   return (
     <div className="font-sans text-slate-800" suppressHydrationWarning>
-      {/* 1. 히어로 섹션 (디자인 유지) */}
-      <section className="relative pt-20 pb-20 px-4 overflow-hidden bg-slate-900 text-white">
+      {/* 1. 히어로 섹션 */}
+      <section className="relative pt-16 pb-14 px-4 overflow-hidden bg-slate-900 text-white">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
           <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-blue-600/30 rounded-full blur-[120px]"></div>
           <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-purple-600/20 rounded-full blur-[100px]"></div>
         </div>
 
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-blue-400 text-xs font-bold mb-6">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-            </span>
-            2026년형 장기렌트 특판 리스트 업데이트
+        <div className="max-w-6xl mx-auto relative z-10">
+          {/* 배지 */}
+          <div className="flex justify-center mb-5">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-blue-400 text-xs font-bold">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+              </span>
+              2026년형 장기렌트 특판 리스트 업데이트
+            </div>
           </div>
-          <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight tracking-tight">
-            딜러 수당 거품 뺀<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">진짜 원가 견적</span>을 공개합니다
-          </h1>
-          
-          <p className="text-slate-400 mb-10 text-lg md:text-xl max-w-2xl mx-auto font-light">
-            아직도 월 렌탈료만 보고 계약하시나요?<br />
-            현직 전문가가 분석한 <span className="text-white font-medium">투명한 견적 리포트</span>를 무료로 받아보세요.
-            <br className="my-2 block" />
-            <span className="block mt-2">견적 의뢰 한 번만 해도 고객님의 지갑을 지킬 수 있습니다.</span>
-          </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/consult" className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-50 transition shadow-lg shadow-blue-900/50 flex items-center justify-center gap-2">
+          {/* 제목 + 설명 가로 배치 */}
+          <div className="flex flex-col md:flex-row md:items-center md:gap-10 mb-8">
+            <div className="md:flex-1 text-center md:text-left mb-4 md:mb-0">
+              <h1 className="text-3xl md:text-5xl font-extrabold leading-tight tracking-tight">
+                딜러 수당 거품 뺀<br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">진짜 원가 견적</span>을 공개합니다
+              </h1>
+            </div>
+            <div className="md:flex-1 text-center md:text-left">
+              <p className="text-slate-400 text-base md:text-lg font-light leading-relaxed">
+                아직도 월 렌탈료만 보고 계약하시나요?<br />
+                현직 전문가가 분석한 <span className="text-white font-medium">투명한 견적 리포트</span>를 무료로 받아보세요.<br />
+                <span className="text-slate-400">견적 의뢰 한 번만 해도 고객님의 지갑을 지킬 수 있습니다.</span>
+              </p>
+            </div>
+          </div>
+
+          {/* 버튼 가운데 */}
+          <div className="flex justify-center">
+            <Link href="/consult" className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition shadow-lg shadow-blue-900/50 flex items-center gap-2">
               <Calculator className="w-5 h-5" />
               무료 견적 분석 신청
             </Link>
