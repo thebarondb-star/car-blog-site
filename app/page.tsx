@@ -205,7 +205,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
                           <div>
                             <p className="text-[10px] text-blue-500 font-bold mb-0.5">선수금 30% 기준</p>
                             <p className="text-3xl font-black text-blue-600">{fmt(car.monthly_rent_30)}<span className="text-base font-bold text-slate-500">원/월</span></p>
-                            <p className="text-sm text-slate-500 font-medium mt-1">선수금 0원 시 {fmt(car.monthly_rent)}원/월</p>
+                            <p className="text-sm text-slate-600 font-bold mt-1">선수금 0원 시 {fmt(car.monthly_rent)}원/월</p>
                           </div>
                         ) : (
                           <>
