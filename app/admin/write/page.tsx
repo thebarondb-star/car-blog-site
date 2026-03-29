@@ -255,6 +255,7 @@ ${chosenRelated.map(p => `<li style="margin-bottom:0.5rem;"><a href="/posts/${p.
         priority: formData.priority ? Number(formData.priority) : 9999,
         content: finalContent,
         image_url: formData.image_url,
+        keywords: formData.keywords,
         date_text: dateText,
         color_class: "bg-slate-800",
         is_published: isPublish,

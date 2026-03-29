@@ -81,7 +81,7 @@ export default function AdminEdit({ params }: { params: Promise<{ id: string }> 
             content: data.content || "",
             image_url: data.image_url || "",
             is_published: data.is_published || false,
-            keywords: [],
+            keywords: Array.isArray(data.keywords) ? data.keywords : [],
           });
           if (editorRef.current) editorRef.current.innerHTML = data.content || "";
         }
@@ -256,6 +256,7 @@ ${chosenRelated.map(p => `<li style="margin-bottom:0.5rem;"><a href="/posts/${p.
         priority: formData.priority ? Number(formData.priority) : 9999,
         content: finalContent,
         image_url: formData.image_url,
+        keywords: formData.keywords,
         is_published: isPublish,
       }).eq("id", id);
 
