@@ -2,7 +2,11 @@
   "crons": [
     {
       "path": "/api/auto-publish",
-      "schedule": "0 0 * * *"
+      "schedule": "30 23 * * *"
+    },
+    {
+      "path": "/api/car-market-publish",
+      "schedule": "0 1 * * *"
     }
   ]
 }
