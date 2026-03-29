@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     images: ["https://www.dr-rent.net/og-image.png"],
   },
   alternates: { canonical: "https://www.dr-rent.net" },
-}; 
+};
 
 // ✅ 1. 카테고리 목록 수정: 이름과 slug(영어주소)를 매칭한 객체 배열로 변경
 async function getCategories() {
@@ -45,7 +45,7 @@ async function getPosts(category?: string) {
     .from('posts')
     .select('*') // 여기서 slug도 같이 가져옵니다
     .eq('is_published', true) // ✨ [추가됨] 임시저장 글 제외, 발행된 글만 메인에 노출
-    .order('priority', { ascending: true }) 
+    .order('priority', { ascending: true })
     .order('id', { ascending: false });
 
   if (category && category !== "전체") {
@@ -240,14 +240,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
               {/* 신뢰 포인트 - 특가차량 아래 슬림하게 */}
               <div className="grid md:grid-cols-3 gap-3">
                 {[
-                  { title: "즉시 출고 시스템", desc: "전국 24개 렌트사 재고 통합 조회로 7일 내 인도 가능합니다." },
-                  { title: "허위견적서 진단", desc: "허위견적 진단 및 최적견적 제공." },
-                  { title: "영업 수수료 0원", desc: "불필요한 딜러 마진 ZERO 최저견적을 드립니다." },
+                  { title: "즉시 출고 시스템", desc: "전국 7일 내 인도 가능" },
+                  { title: "허위견적서 진단", desc: "허위견적 진단 및 최적견적 제공" },
+                  { title: "영업 수수료 0원", desc: "불필요한 딜러 마진 ZERO 최저견적 보장" },
                 ].map((item, idx) => (
-                  <div key={idx} className="bg-blue-600 px-5 py-3 rounded-xl flex items-center gap-3">
-                    <h3 className="font-bold text-sm text-white whitespace-nowrap">{item.title}</h3>
-                    <span className="text-blue-400">|</span>
-                    <p className="text-xs text-blue-100 leading-relaxed">{item.desc}</p>
+                  <div key={idx} className="bg-white px-5 py-3 rounded-xl shadow-sm border border-slate-100 flex items-center gap-3">
+                    <h3 className="font-bold text-sm text-slate-900 whitespace-nowrap">{item.title}</h3>
+                    <span className="text-slate-300">|</span>
+                    <p className="text-xs text-slate-500 leading-relaxed">{item.desc}</p>
                   </div>
                 ))}
               </div>
@@ -273,7 +273,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
       {/* 3. 블로그 리스트 */}
       <section className="py-16 px-4 bg-slate-50">
         <div className="max-w-6xl mx-auto">
-          
+
           <div className="mb-10">
             <h2 className="text-3xl font-bold text-slate-900 mb-2">Dr.Rent INSIGHT</h2>
             <p className="text-slate-500 mb-8">호갱 탈출을 위한 필수 지식과 노하우</p>
@@ -287,9 +287,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
                   scroll={false}
                   className={`
                     whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 border flex items-center gap-1
-                    ${selectedCategory === category.name 
-                      ? "bg-slate-900 text-white border-slate-900 shadow-lg scale-105" 
-                      : category.name === "특가차량리스트" 
+                    ${selectedCategory === category.name
+                      ? "bg-slate-900 text-white border-slate-900 shadow-lg scale-105"
+                      : category.name === "특가차량리스트"
                         ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
                         : "bg-white text-slate-500 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
                     }
@@ -317,7 +317,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
                 <Link href={`/posts/${post.slug}`} key={post.id} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-slate-100 flex flex-col h-full">
                   <div className="h-48 relative overflow-hidden bg-slate-200">
                     {post.image_url ? (
-                      <img src={post.image_url} alt={post.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
+                      <img src={post.image_url} alt={post.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                     ) : (
                       <div className={`w-full h-full ${post.color_class || 'bg-slate-800'}`} />
                     )}
