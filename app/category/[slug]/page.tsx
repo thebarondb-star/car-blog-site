@@ -66,7 +66,7 @@ export default async function CategoryPage({ params }: Props) {
   // 특가차량리스트면 car_listings도 가져오기
   const isSpecial = categoryName === '특가차량리스트';
   const { data: carListings } = isSpecial
-    ? await supabase.from('car_listings').select('*').eq('is_active', true).order('created_at', { ascending: false })
+    ? await supabase.from('car_listings').select('*').order('is_sold', { ascending: true }).order('created_at', { ascending: false })
     : { data: [] };
 
   return (
