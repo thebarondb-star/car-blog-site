@@ -203,6 +203,25 @@ export default function CarWrite() {
       alert("차량명, 총가격, 월렌트료는 필수입니다."); return;
     }
     setSaving(true);
+
+    // 키워드 비어있으면 자동생성
+    let finalKeywords = form.keywords;
+    if (finalKeywords.length === 0) {
+      try {
+        const res = await fetch("/api/car-keywords", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            car_name: form.car_name, color_exterior: form.color_exterior,
+            options: form.options, total_price: Number(form.total_price.replace(/,/g, '')) || 0,
+            monthly_rent: Number(form.monthly_rent.replace(/,/g, '')) || 0,
+            duration: form.duration, mileage: form.mileage,
+          }),
+        });
+        const result = await res.json();
+        finalKeywords = result.keywords || [];
+      } catch { /* 실패해도 빈 배열로 진행 */ }
+    }
+
     const { error } = await supabase.from("car_listings").insert([{
       car_name: form.car_name,
       color_exterior: form.color_exterior || null,
@@ -215,7 +234,7 @@ export default function CarWrite() {
       image_url: form.image_url || null,
       image_alt: form.image_alt || null,
       image_caption: form.image_caption || null,
-      keywords: form.keywords, is_active: form.is_active,
+      keywords: finalKeywords, is_active: form.is_active,
     }]);
     setSaving(false);
     if (error) { alert("저장 실패: " + error.message); return; }
