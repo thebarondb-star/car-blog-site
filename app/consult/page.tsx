@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
 import ConsultForm from "./ConsultForm";
 
 export const metadata: Metadata = {
@@ -48,7 +49,9 @@ export default function ConsultPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(businessSchema) }}
       />
-      <ConsultForm />
+      <Suspense fallback={null}>
+        <ConsultForm />
+      </Suspense>
     </main>
   );
 }
