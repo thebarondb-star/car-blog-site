@@ -47,10 +47,10 @@ function fmt(n: number) {
 async function getCarListings() {
   const { data } = await supabase
     .from('car_listings')
-    .select('id, car_name, total_price, monthly_rent, duration, mileage, image_url, image_alt, image_caption, options, is_sold, created_at')
+    .select('id, car_name, total_price, monthly_rent, monthly_rent_30, duration, mileage, image_url, image_alt, image_caption, options, is_sold, created_at')
     .eq('is_active', true)
     .order('created_at', { ascending: false })
-    .limit(6);
+    .limit(3);
   return data || [];
 }
 
@@ -159,8 +159,18 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
                       </div>
                       {car.options && <p className="text-xs text-slate-400 mb-3 line-clamp-1">{car.options}</p>}
                       <div className="mb-3">
-                        <p className="text-xs text-slate-500 mb-0.5">월 렌트료</p>
-                        <p className="text-3xl font-black text-blue-600">{fmt(car.monthly_rent)}<span className="text-base font-bold text-slate-500">원/월</span></p>
+                        {car.monthly_rent_30 ? (
+                          <div>
+                            <p className="text-[10px] text-blue-500 font-bold mb-0.5">선수금 30% 기준</p>
+                            <p className="text-3xl font-black text-blue-600">{fmt(car.monthly_rent_30)}<span className="text-base font-bold text-slate-500">원/월</span></p>
+                            <p className="text-[11px] text-slate-400 mt-1">선수금 0원 시 {fmt(car.monthly_rent)}원/월</p>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-xs text-slate-500 mb-0.5">월 렌트료</p>
+                            <p className="text-3xl font-black text-blue-600">{fmt(car.monthly_rent)}<span className="text-base font-bold text-slate-500">원/월</span></p>
+                          </>
+                        )}
                       </div>
                       <div className="flex gap-2 flex-wrap mb-3">
                         <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-bold">{car.duration}개월</span>

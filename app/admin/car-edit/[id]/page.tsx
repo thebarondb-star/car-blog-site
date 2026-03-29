@@ -25,7 +25,7 @@ export default function CarEdit({ params }: { params: Promise<{ id: string }> })
 
   const [form, setForm] = useState({
     car_name: "", color_exterior: "", color_interior: "",
-    options: "", total_price: "", monthly_rent: "",
+    options: "", total_price: "", monthly_rent: "", monthly_rent_30: "",
     duration: 48, mileage: 20000,
     image_url: "", image_alt: "", image_caption: "",
     keywords: [] as string[], is_active: true, is_sold: false,
@@ -42,6 +42,7 @@ export default function CarEdit({ params }: { params: Promise<{ id: string }> })
         options: data.options || "",
         total_price: data.total_price ? fmt(data.total_price) : "",
         monthly_rent: data.monthly_rent ? fmt(data.monthly_rent) : "",
+        monthly_rent_30: data.monthly_rent_30 ? fmt(data.monthly_rent_30) : "",
         duration: data.duration || 48,
         mileage: data.mileage || 20000,
         image_url: data.image_url || "",
@@ -95,6 +96,7 @@ export default function CarEdit({ params }: { params: Promise<{ id: string }> })
       options: form.options || null,
       total_price: Number(form.total_price.replace(/,/g, '')),
       monthly_rent: Number(form.monthly_rent.replace(/,/g, '')),
+      monthly_rent_30: form.monthly_rent_30 ? Number(form.monthly_rent_30.replace(/,/g, '')) : null,
       duration: form.duration, mileage: form.mileage,
       image_url: form.image_url || null,
       image_alt: form.image_alt || null,
@@ -195,7 +197,7 @@ export default function CarEdit({ params }: { params: Promise<{ id: string }> })
               </div>
             </div>
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1">월 렌트료</label>
+              <label className="block text-sm font-bold text-slate-700 mb-1">월 렌트료 (선수금 0원)</label>
               <div className="relative">
                 <input type="text" value={form.monthly_rent}
                   onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ''); setForm(p => ({ ...p, monthly_rent: raw ? Number(raw).toLocaleString('ko-KR') : '' })); }}
@@ -203,6 +205,27 @@ export default function CarEdit({ params }: { params: Promise<{ id: string }> })
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">원</span>
               </div>
             </div>
+          </div>
+
+          {/* 선수금 30% */}
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-1">
+              월 렌트료 (선수금 30%)
+              <span className="text-slate-400 font-normal ml-2 text-xs">선택</span>
+            </label>
+            <div className="flex gap-3 items-center p-3 bg-blue-50 rounded-xl border border-blue-100">
+              <div className="flex-shrink-0 text-xs font-bold text-blue-700 bg-blue-100 px-2 py-1 rounded-md">선수금 30%</div>
+              <div className="relative flex-1">
+                <input type="text" value={form.monthly_rent_30}
+                  onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ''); setForm(p => ({ ...p, monthly_rent_30: raw ? Number(raw).toLocaleString('ko-KR') : '' })); }}
+                  placeholder="490,000"
+                  className="w-full px-3 py-2.5 rounded-xl border border-blue-200 text-sm pr-6 focus:outline-none focus:border-blue-500 bg-white" />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">원/월</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-1">계약기간</label>
               <select value={form.duration} onChange={e => setForm(p => ({ ...p, duration: Number(e.target.value) }))}

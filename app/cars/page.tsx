@@ -115,8 +115,18 @@ export default function CarsPage() {
                     {car.options && <p className="text-xs text-slate-400 mb-3 line-clamp-1">{car.options}</p>}
 
                     <div className="mb-3">
-                      <p className="text-xs text-slate-500 mb-0.5">월 렌트료</p>
-                      <p className="text-3xl font-black text-blue-600">{fmt(car.monthly_rent)}<span className="text-base font-bold text-slate-500">원/월</span></p>
+                      {car.monthly_rent_30 ? (
+                        <div>
+                          <p className="text-[10px] text-blue-500 font-bold mb-0.5">선수금 30% 기준</p>
+                          <p className="text-3xl font-black text-blue-600">{fmt(car.monthly_rent_30)}<span className="text-base font-bold text-slate-500">원/월</span></p>
+                          <p className="text-[11px] text-slate-400 mt-1">선수금 0원 시 {fmt(car.monthly_rent)}원/월</p>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-xs text-slate-500 mb-0.5">월 렌트료</p>
+                          <p className="text-3xl font-black text-blue-600">{fmt(car.monthly_rent)}<span className="text-base font-bold text-slate-500">원/월</span></p>
+                        </>
+                      )}
                     </div>
 
                     {car.image_caption && <p className="text-xs text-slate-400 italic mb-2">▲ {car.image_caption}</p>}
