@@ -543,6 +543,8 @@ Return ONLY this JSON (no markdown, no explanation):
 1. ${TODAY} 기준 최신 정보만. 2024년 이전 연도 사용 금지.
 2. 글을 중간에 끊지 말 것. 마지막 태그까지 반드시 완성.
 3. 순수 HTML만 반환 (마크다운·JSON·설명·CTA 금지)
+4. 보조금·가격 등 수치는 추정 금지 — 확실하지 않으면 "약 ~원 수준" 또는 "정부 공시 기준"으로 표현
+5. img 태그에 title/loading/width/height 속성 직접 작성 금지 (자동 추가됨)
 ${latestInfoSection}
 ━━ SEO 키워드 자연 삽입 규칙 ━━
 다음 키워드를 본문에 자연스럽게 녹여 써야 합니다: ${keywordList}
@@ -897,20 +899,19 @@ async function savePost(postData: {
   const dateText = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
 
   // 기존 CTA 제거 후 고정 CTA 삽입 (사용자 지정 템플릿)
-  const FIXED_CTA = `<div class="text-center">
+  const FIXED_CTA = `<div class="text-center my-10">
     <h3 class="text-2xl font-bold text-gray-900 mb-4">📢 "솔직한 견적서가 고객님의 돈을 아껴줍니다"</h3>
     <p class="mb-6 leading-relaxed text-gray-600">
         서비스인 척 생색내며 영업사원이 챙길 건 다 챙기는 견적서,<br>
         투명하게 가격을 공개하고 원가 그대로 진행하는 견적서.<br>
-        <strong>어떤 것이 진짜 고객님을 위한 견적일까요?</strong></p>
-</div>
-<center>
-   <div class="mt-6">
+        <strong>어떤 것이 진짜 고객님을 위한 견적일까요?</strong>
+    </p>
+    <div class="flex justify-center mt-6">
       <a href="/consult" class="inline-block bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition">
         전문가에게 무료 견적 진단받기 →
       </a>
     </div>
-</center>`;
+</div>`;
 
   // 기존 모든 CTA 패턴 제거 후 고정 CTA 하나만 삽입
   let contentWithCta = postData.content
@@ -929,10 +930,10 @@ async function savePost(postData: {
   let finalContent = await addRelatedLinks(contentWithCta, postData.internal_links, postData.slug);
 
   // 이미지 메타 정보 추가 (alt, title, loading)
-  // ※ JSON-LD 스키마는 PostDetail 페이지에서만 렌더링 (content에 넣으면 hydration 충돌)
+  // 이미지 태그 정리 - title/loading/width 없는 img에만 추가 (중복 방지)
   finalContent = finalContent.replace(
-    /<img\s+src="([^"]*)"\s+alt="([^"]*)"/g,
-    `<img src="$1" alt="$2" title="$2" loading="lazy" width="1200" height="630"`
+    /<img\s+src="([^"]*)"\s+alt="([^"]*)"(?!\s+title)/g,
+    `<img src="$1" alt="$2" title="$2" loading="lazy" width="1080" height="720"`
   );
 
   const { data, error } = await supabase
@@ -1042,9 +1043,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<AutoPubli
     let slotIndex = 0;
     const makeImgHtml = (img: { url: string; alt: string; caption: string; credit?: string }) => {
       const creditText = img.credit && img.credit !== 'AI 생성 이미지' ? ` (${img.credit})` : '';
-      return `<figure style="margin:2rem 0;text-align:center;">
-  <img src="${img.url}" alt="${img.alt}" title="${img.alt}" loading="lazy" width="1080" height="720" style="width:100%;max-width:100%;border-radius:0.75rem;box-shadow:0 4px 20px rgba(0,0,0,0.1);" />
-  <figcaption style="margin-top:0.5rem;font-size:0.875rem;color:#64748b;font-style:italic;">▲ ${img.caption}${creditText}</figcaption>
+      // 중복 속성 없이 깔끔하게 단일 img 태그 생성
+      return `<figure class="my-8 text-center">
+  <img src="${img.url}" alt="${img.alt}" title="${img.alt}" loading="lazy" width="1080" height="720" class="w-full rounded-xl shadow-md inline-block" />
+  <figcaption class="mt-2 text-sm text-slate-500 italic">▲ ${img.caption}${creditText}</figcaption>
 </figure>`;
     };
 
