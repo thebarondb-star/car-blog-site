@@ -112,6 +112,12 @@ export default function CarsPage() {
                         <span className="flex-shrink-0 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded">판매완료</span>
                       )}
                     </div>
+                    {/* SEO 설명 한 줄 */}
+                    <p className="text-xs text-slate-500 mb-2">
+                      {car.car_name} 장기렌트 월 {fmt(car.monthly_rent_30 || car.monthly_rent)}원 | {car.duration}개월 | 연 {(car.mileage/10000).toFixed(0)}만km
+                      {car.monthly_rent_30 ? ' | 선수금 0원 가능' : ''}
+                    </p>
+
                     {car.options && <p className="text-xs text-slate-400 mb-3 line-clamp-1">{car.options}</p>}
 
                     <div className="mb-3">

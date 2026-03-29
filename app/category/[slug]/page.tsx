@@ -104,6 +104,12 @@ export default async function CategoryPage({ params }: Props) {
                 </div>
                 <div className="p-5 flex flex-col flex-1">
                   <h3 className="font-black text-lg text-slate-900 group-hover:text-blue-600 transition mb-1">{car.car_name}</h3>
+                  {/* SEO 설명 한 줄 */}
+                  <p className="text-xs text-slate-500 mb-2">
+                    {car.car_name} 장기렌트 월 {fmt(car.monthly_rent_30 || car.monthly_rent)}원 | {car.duration}개월 | 연 {(car.mileage/10000).toFixed(0)}만km
+                    {car.monthly_rent_30 ? ' | 선수금 0원 가능' : ''}
+                  </p>
+
                   {car.options && <p className="text-xs text-slate-400 mb-3 line-clamp-1">{car.options}</p>}
                   <div className="mb-3">
                     {car.monthly_rent_30 ? (
