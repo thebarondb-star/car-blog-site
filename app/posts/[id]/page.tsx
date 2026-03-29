@@ -71,9 +71,26 @@ export default async function PostDetail({ params }: Props) {
     .order('id', { ascending: false })
     .limit(3);
 
+  // JSON-LD는 article 밖 최상단에 위치해야 hydration 충돌 없음
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": post.title,
+    "description": post.desc_text,
+    "image": post.image_url,
+    "datePublished": post.created_at,
+    "author": { "@type": "Person", "name": "탁터김" }
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans text-slate-800">
-      
+
+      {/* JSON-LD 구조화 데이터 - article 밖에서 렌더링 */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       {/* 상단 네비게이션 (목록으로) */}
       <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center">
@@ -108,7 +125,7 @@ export default async function PostDetail({ params }: Props) {
           </div>
           <div className="flex items-center gap-1">
             <User className="w-4 h-4" />
-            에디터 닥터리 
+            에디터 {post.content?.includes('<!-- author:탁터김 -->') ? '탁터김' : '닥터리'}
           </div>
         </div>
 
@@ -119,24 +136,6 @@ export default async function PostDetail({ params }: Props) {
           <p className="text-center py-10 text-slate-400">본문 내용을 불러오는 중입니다.</p>
         )}
 
-        {/* ✅ [추가됨] 구조화 데이터 (JSON-LD) 삽입 */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Article",
-              "headline": post.title,
-              "description": post.desc_text,
-              "image": post.image_url,
-              "datePublished": post.created_at,
-              "author": {
-                "@type": "Person",
-                "name": "닥터리"
-              }
-            })
-          }}
-        />
 
       </article>
 

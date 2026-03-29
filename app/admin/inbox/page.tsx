@@ -2,19 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase-browser";
 import { useRouter } from "next/navigation";
-import { Lock, FileText, Trash2, Download, LogOut, ExternalLink, Loader2 } from "lucide-react";
-import * as XLSX from "xlsx-js-style"; // 엑셀 다운로드 라이브러리
+import { FileText, Trash2, Download, LogOut, Loader2, ExternalLink } from "lucide-react";
+import * as XLSX from "xlsx-js-style";
 
 export default function InboxPage() {
   const router = useRouter();
-  
-  // 🔐 보안 및 데이터 상태
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passwordInput, setPasswordInput] = useState(""); // 처음엔 빈 값으로 시작
-  const [authError, setAuthError] = useState("");
   const [consults, setConsults] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { fetchConsults(); }, []);
 
   // 1. 데이터 불러오기
   const fetchConsults = async () => {
@@ -29,15 +27,12 @@ export default function InboxPage() {
     setLoading(false);
   };
 
-  // 2. 로그인 처리
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passwordInput === "dlrns6632!") {
-      setIsAuthenticated(true);
-      fetchConsults();
-    } else {
-      setAuthError("비밀번호가 일치하지 않습니다.");
-    }
+  // 2. 로그아웃
+  const handleLogout = async () => {
+    const authClient = createClient();
+    await authClient.auth.signOut();
+    router.push('/admin/login');
+    router.refresh();
   };
 
   // 3. 상태 변경 (드롭다운)
@@ -88,44 +83,7 @@ export default function InboxPage() {
     XLSX.writeFile(wb, `닥터렌트_상담내역_${new Date().toISOString().slice(0,10)}.xlsx`);
   };
 
-  // 🔒 화면 1: 잠금 화면 (비밀번호 입력)
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="bg-white max-w-sm w-full p-8 rounded-2xl shadow-xl border border-slate-100 text-center">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-500">
-            <Lock className="w-8 h-8" />
-          </div>
-          <h1 className="text-xl font-bold text-slate-900 mb-2">관리자 확인</h1>
-          <p className="text-slate-500 text-sm mb-6">이 페이지는 관리자만 접근할 수 있습니다.<br/>비밀번호를 입력해주세요.</p>
-          
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input 
-              type="password" 
-              value={passwordInput}
-              onChange={(e) => setPasswordInput(e.target.value)}
-              placeholder=""  // ✅ 플레이스홀더 비움
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 outline-none text-center font-bold text-lg"
-              autoFocus
-              autoComplete="new-password" // 자동완성 방지 시도
-            />
-            {authError && <p className="text-red-500 text-xs font-bold">{authError}</p>}
-            
-            <div className="flex gap-2">
-              <button type="button" onClick={() => router.push('/')} className="flex-1 py-3 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-xl border border-slate-200 transition">
-                돌아가기
-              </button>
-              <button type="submit" className="flex-[2] bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition flex items-center justify-center gap-2">
-                <Lock className="w-4 h-4" /> 확인
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-  // 🔓 화면 2: 관리자 리스트 (표 형식)
+  // 관리자 리스트
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -138,8 +96,8 @@ export default function InboxPage() {
           </h1>
           
           <div className="flex gap-2 w-full md:w-auto">
-             <button 
-              onClick={() => setIsAuthenticated(false)}
+             <button
+              onClick={handleLogout}
               className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 text-sm font-bold transition flex items-center gap-1"
             >
               <LogOut className="w-4 h-4" /> 로그아웃
@@ -188,20 +146,23 @@ export default function InboxPage() {
                     <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                       {/* 1. 상태 (드롭다운) */}
                       <td className="px-4 py-3 text-center">
-                        <select
-                          value={item.status || '신규'}
-                          onChange={(e) => updateStatus(item.id, e.target.value)}
-                          className={`
-                            px-2 py-1 rounded-md text-xs font-bold border outline-none cursor-pointer appearance-none text-center
-                            ${item.status === '다운완료' ? 'bg-slate-100 text-slate-500 border-slate-200' : 
-                              item.status === '진행중체크' ? 'bg-blue-50 text-blue-600 border-blue-200' : 
-                              'bg-red-50 text-red-600 border-red-200'}
-                          `}
-                        >
-                          <option value="신규">신규</option>
-                          <option value="진행중체크">진행중체크</option>
-                          <option value="다운완료">다운완료</option>
-                        </select>
+                        <div className="relative inline-block">
+                          <select
+                            value={item.status || '신규'}
+                            onChange={(e) => updateStatus(item.id, e.target.value)}
+                            className={`
+                              pl-2 pr-6 py-1 rounded-md text-xs font-bold border outline-none cursor-pointer appearance-none text-center
+                              ${item.status === '상담완료' ? 'bg-slate-100 text-slate-500 border-slate-200' :
+                                item.status === '진행중' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                                'bg-red-50 text-red-600 border-red-200'}
+                            `}
+                          >
+                            <option value="신규">신규</option>
+                            <option value="진행중">진행중</option>
+                            <option value="상담완료">상담완료</option>
+                          </select>
+                          <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-current opacity-60 text-[10px]">▼</span>
+                        </div>
                       </td>
 
                       {/* 2. 날짜 */}
@@ -221,9 +182,15 @@ export default function InboxPage() {
                         </a>
                       </td>
 
-                      {/* 5. 차종 */}
-                      <td className="px-4 py-3 text-blue-600 font-medium">
-                        {item.car_model || '-'}
+                      {/* 5. 차종 + 링크 */}
+                      <td className="px-4 py-3">
+                        <div className="text-blue-600 font-medium">{item.car_model || '-'}</div>
+                        {item.car_link && (
+                          <a href={item.car_link} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-blue-500 mt-0.5 transition">
+                            <ExternalLink className="w-3 h-3" /> 차량 페이지
+                          </a>
+                        )}
                       </td>
 
                       {/* 6. 문의내용 (말줄임 처리) */}

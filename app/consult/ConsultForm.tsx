@@ -1,24 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
-import { CheckCircle2, Loader2, Upload, X, ShieldCheck, ExternalLink } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { CheckCircle2, Loader2, Upload, X, ShieldCheck, ExternalLink, Car } from "lucide-react";
 
 export default function ConsultForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string>("");
   const [agreed, setAgreed] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
+  // URL params에서 차량 정보 자동입력
+  const carFromUrl = searchParams.get("car") || "";
+  const carIdFromUrl = searchParams.get("car_id") || "";
+
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    car_model: "",
+    car_model: carFromUrl,
     memo: ""
   });
+
+  useEffect(() => {
+    if (carFromUrl) {
+      setFormData(prev => ({ ...prev, car_model: carFromUrl }));
+    }
+  }, [carFromUrl]);
 
   const handleChange = (e: any) => {
     const { name, value } = e.target;
@@ -71,15 +82,21 @@ export default function ConsultForm() {
         imageUrl = publicUrl;
       }
 
+      // car_link: 관리자가 바로 해당 차량 수정 페이지로 갈 수 있는 링크 (상대경로)
+      const carLink = carIdFromUrl
+        ? `/admin/car-edit/${carIdFromUrl}`
+        : "";
+
       const { error } = await supabase
         .from('customer_consults')
         .insert([
-          { 
-            name: formData.name, 
-            phone: formData.phone, 
-            car_model: formData.car_model, 
+          {
+            name: formData.name,
+            phone: formData.phone,
+            car_model: formData.car_model,
             memo: formData.memo,
-            image_url: imageUrl, 
+            image_url: imageUrl,
+            car_link: carLink || null,
             status: '신규',
             agreed_at: new Date().toISOString()
           }
@@ -164,7 +181,20 @@ export default function ConsultForm() {
 
             <div>
               <label className="block text-sm font-bold mb-2 text-slate-700">관심 차종</label>
-              <input name="car_model" value={formData.car_model} onChange={handleChange} className="w-full border border-slate-300 p-3 rounded-xl outline-none focus:border-blue-500" placeholder="예: 그랜저, 쏘렌토" />
+              {carFromUrl ? (
+                <div className="w-full border border-blue-200 bg-blue-50 p-3 rounded-xl flex items-center gap-2">
+                  <Car className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                  <span className="font-bold text-blue-800">{formData.car_model}</span>
+                  <span className="text-xs text-blue-500 ml-1">자동 입력됨</span>
+                </div>
+              ) : (
+                <input name="car_model" value={formData.car_model} onChange={handleChange} className="w-full border border-slate-300 p-3 rounded-xl outline-none focus:border-blue-500" placeholder="예: 그랜저, 쏘렌토" />
+              )}
+              {carIdFromUrl && (
+                <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                  <span>해당 차량 링크가 상담 내역에 자동으로 포함됩니다.</span>
+                </p>
+              )}
             </div>
 
             <div>

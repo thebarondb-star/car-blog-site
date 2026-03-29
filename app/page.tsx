@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText, ChevronRight, ShieldCheck, Zap, Calculator, Siren } from "lucide-react";
+import { FileText, ChevronRight, ShieldCheck, Zap, Calculator, Siren, Car } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export const revalidate = 0; 
@@ -11,6 +11,7 @@ async function getCategories() {
     { name: "닥터렌트는?", slug: "about" },
     { name: "호갱탈출", slug: "hogaeng-escape" },
     { name: "장기렌트정보", slug: "rent-info" },
+    { name: "자동차시장", slug: "car-market" },
     { name: "특가차량리스트", slug: "special-price" }
   ];
 }
@@ -39,15 +40,32 @@ async function getPosts(category?: string) {
   return posts;
 }
 
+function fmt(n: number) {
+  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+async function getCarListings() {
+  const { data } = await supabase
+    .from('car_listings')
+    .select('id, car_name, total_price, monthly_rent, duration, mileage, image_url, image_alt, image_caption, options, is_sold, created_at')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(6);
+  return data || [];
+}
+
 export default async function Home({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
   const params = await searchParams;
   const selectedCategory = params.category || "전체";
 
-  const categories = await getCategories();
-  const posts = await getPosts(selectedCategory);
+  const [categories, posts, carListings] = await Promise.all([
+    getCategories(),
+    getPosts(selectedCategory),
+    getCarListings(),
+  ]);
 
   return (
-    <div className="font-sans text-slate-800">
+    <div className="font-sans text-slate-800" suppressHydrationWarning>
       {/* 1. 히어로 섹션 (디자인 유지) */}
       <section className="relative pt-20 pb-20 px-4 overflow-hidden bg-slate-900 text-white">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
@@ -84,22 +102,94 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
         </div>
       </section>
 
-      {/* 2. 신뢰 포인트 (디자인 유지) */}
+      {/* 2. 특가 차량 리스트 or 신뢰 포인트 */}
       <section className="py-16 px-4 -mt-10 relative z-20">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6">
-          {[
-            { icon: <Zap className="w-6 h-6 text-yellow-500" />, title: "즉시 출고 시스템", desc: "전국 24개 렌트사 재고 통합 조회로 7일 내 인도 가능합니다." },
-            { icon: <ShieldCheck className="w-6 h-6 text-green-500" />, title: "허위견적서 진단", desc: "허위견적 진단 및 최적견적 제공." },
-            { icon: <Calculator className="w-6 h-6 text-blue-500" />, title: "영업 수수료 0원", desc: "불필요한 딜러 마진 ZERO 최저견적을 드립니다." },
-          ].map((item, idx) => (
-            <div key={idx} className="bg-white p-8 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 hover:-translate-y-1 transition duration-300">
-              <div className="bg-slate-50 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                {item.icon}
+        <div className="max-w-6xl mx-auto">
+          {carListings.length > 0 ? (
+            <>
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 border border-red-200 text-red-600 text-xs font-bold mb-3">
+                    <Siren className="w-3 h-3" /> 이번 달 특가 차량
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900">지금 바로 탈 수 있는 특가 리스트</h2>
+                </div>
+                <Link href="/cars" className="flex-shrink-0 flex items-center gap-1 text-sm text-blue-600 font-bold hover:underline">
+                  전체보기 <ChevronRight className="w-4 h-4" />
+                </Link>
               </div>
-              <h3 className="font-bold text-lg mb-2 text-slate-900">{item.title}</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">{item.desc}</p>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {carListings.map((car: any) => (
+                  <Link key={car.id} href={`/consult?car=${encodeURIComponent(car.car_name)}&car_id=${car.id}`}
+                    className={`group bg-white rounded-2xl overflow-hidden shadow-xl shadow-slate-200/50 border border-slate-100 hover:-translate-y-1 transition duration-300 flex flex-col ${car.is_sold ? 'opacity-70' : ''}`}>
+                    <div className="h-48 relative overflow-hidden bg-slate-100">
+                      {car.image_url ? (
+                        <img src={car.image_url} alt={car.image_alt || car.car_name}
+                          title={car.image_alt || car.car_name} loading="lazy"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300">
+                          <Car className="w-16 h-16 text-slate-400" />
+                        </div>
+                      )}
+                      {car.is_sold ? (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <span className="bg-red-600 text-white font-black text-base px-4 py-1.5 rounded-xl">판매완료</span>
+                        </div>
+                      ) : (
+                        <div className="absolute top-3 left-3">
+                          <span className="bg-red-600 text-white text-[10px] font-black px-2 py-1 rounded-md shadow-sm">SPECIAL</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-5 flex flex-col flex-1">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h3 className="font-black text-lg text-slate-900 group-hover:text-blue-600 transition leading-snug">{car.car_name}</h3>
+                        {car.is_sold && <span className="flex-shrink-0 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded">판매완료</span>}
+                      </div>
+                      {car.options && <p className="text-xs text-slate-400 mb-3 line-clamp-1">{car.options}</p>}
+                      <div className="mb-3">
+                        <p className="text-xs text-slate-500 mb-0.5">월 렌트료</p>
+                        <p className="text-3xl font-black text-blue-600">{fmt(car.monthly_rent)}<span className="text-base font-bold text-slate-500">원/월</span></p>
+                      </div>
+                      <div className="flex gap-2 flex-wrap mb-3">
+                        <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-bold">{car.duration}개월</span>
+                        <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-bold">연 {(car.mileage / 10000).toFixed(0)}만km</span>
+                      </div>
+                      <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
+                        <div>
+                          <span className="text-xs text-slate-400">차량가 </span>
+                          <span className="text-sm font-bold text-slate-700">{fmt(car.total_price)}원</span>
+                        </div>
+                        <div className="flex flex-col items-end gap-0.5">
+                          <span className="text-[10px] text-slate-400">{new Date(car.created_at).toLocaleDateString('ko-KR')}</span>
+                          {!car.is_sold && (
+                            <span className="text-xs text-blue-600 font-bold flex items-center gap-1 group-hover:translate-x-1 transition">
+                              견적 받기 <ChevronRight className="w-3 h-3" />
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-6">
+              {[
+                { icon: <Zap className="w-6 h-6 text-yellow-500" />, title: "즉시 출고 시스템", desc: "전국 24개 렌트사 재고 통합 조회로 7일 내 인도 가능합니다." },
+                { icon: <ShieldCheck className="w-6 h-6 text-green-500" />, title: "허위견적서 진단", desc: "허위견적 진단 및 최적견적 제공." },
+                { icon: <Calculator className="w-6 h-6 text-blue-500" />, title: "영업 수수료 0원", desc: "불필요한 딜러 마진 ZERO 최저견적을 드립니다." },
+              ].map((item, idx) => (
+                <div key={idx} className="bg-white p-8 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 hover:-translate-y-1 transition duration-300">
+                  <div className="bg-slate-50 w-12 h-12 rounded-lg flex items-center justify-center mb-4">{item.icon}</div>
+                  <h3 className="font-bold text-lg mb-2 text-slate-900">{item.title}</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed">{item.desc}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       </section>
 

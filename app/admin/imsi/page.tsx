@@ -8,9 +8,6 @@ import Link from "next/link";
 
 export default function AdminImsi() {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passwordInput, setPasswordInput] = useState("");
-  const [authError, setAuthError] = useState("");
   
   const [drafts, setDrafts] = useState<any[]>([]);
   const [fetching, setFetching] = useState(true);
@@ -32,15 +29,8 @@ export default function AdminImsi() {
     }
   };
 
-  useEffect(() => {
-    if (isAuthenticated) fetchDrafts();
-  }, [isAuthenticated]);
+  useEffect(() => { fetchDrafts(); }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passwordInput === "dlrns6632!") setIsAuthenticated(true);
-    else setAuthError("비밀번호가 일치하지 않습니다.");
-  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("이 임시저장 글을 영구 삭제하시겠습니까?")) return;
@@ -52,22 +42,6 @@ export default function AdminImsi() {
     } catch (err) { alert("삭제 실패"); }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="bg-white max-w-sm w-full p-8 rounded-2xl shadow-xl border border-slate-100 text-center">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-500"><Lock className="w-8 h-8" /></div>
-          <h1 className="text-xl font-bold text-slate-900 mb-2">임시저장 보관함</h1>
-          <p className="text-slate-500 text-sm mb-6">비밀번호를 입력해주세요.</p>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 outline-none text-center font-bold text-lg" autoFocus autoComplete="new-password" />
-            {authError && <p className="text-red-500 text-xs font-bold">{authError}</p>}
-            <button type="submit" className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition">확인</button>
-          </form>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-10">
