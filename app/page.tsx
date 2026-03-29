@@ -87,8 +87,27 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
     getCarListings(),
   ]);
 
+  const homeLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "닥터렌트",
+      "url": "https://www.dr-rent.net",
+      "description": "딜러 수당 없는 투명한 장기렌트 원가 견적 서비스",
+      "contactPoint": { "@type": "ContactPoint", "contactType": "customer service", "areaServed": "KR", "availableLanguage": "Korean" },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "닥터렌트",
+      "url": "https://www.dr-rent.net",
+      "potentialAction": { "@type": "SearchAction", "target": "https://www.dr-rent.net/?q={search_term_string}", "query-input": "required name=search_term_string" },
+    },
+  ];
+
   return (
     <div className="font-sans text-slate-800" suppressHydrationWarning>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeLd) }} />
       {/* 1. 히어로 섹션 */}
       <section className="relative pt-16 pb-14 px-4 overflow-hidden bg-slate-900 text-white">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">

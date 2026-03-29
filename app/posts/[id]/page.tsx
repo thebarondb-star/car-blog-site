@@ -71,21 +71,46 @@ export default async function PostDetail({ params }: Props) {
     .order('id', { ascending: false })
     .limit(3);
 
-  // JSON-LD는 article 밖 최상단에 위치해야 hydration 충돌 없음
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": post.title,
-    "description": post.desc_text,
-    "image": post.image_url,
-    "datePublished": post.created_at,
-    "author": { "@type": "Person", "name": "탁터김" }
+  // 카테고리 slug 매핑
+  const categorySlugMap: Record<string, string> = {
+    '호갱탈출': 'hogaeng-escape',
+    '장기렌트정보': 'rent-info',
+    '자동차시장': 'car-market',
+    '닥터렌트는?': 'about',
+    '특가차량리스트': 'special-price',
   };
+  const catSlug = categorySlugMap[post.category] || '';
+
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": post.title,
+      "description": post.desc_text,
+      "image": post.image_url,
+      "datePublished": post.created_at,
+      "dateModified": post.updated_at || post.created_at,
+      "author": { "@type": "Person", "name": post.content?.includes('<!-- author:탁터김 -->') ? "탁터김" : "닥터리" },
+      "publisher": { "@type": "Organization", "name": "닥터렌트", "url": "https://www.dr-rent.net" },
+      "mainEntityOfPage": { "@type": "WebPage", "@id": `https://www.dr-rent.net/posts/${slug}` },
+      "url": `https://www.dr-rent.net/posts/${slug}`,
+      "inLanguage": "ko-KR",
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "홈", "item": "https://www.dr-rent.net" },
+        { "@type": "ListItem", "position": 2, "name": post.category, "item": `https://www.dr-rent.net/category/${catSlug}` },
+        { "@type": "ListItem", "position": 3, "name": post.title, "item": `https://www.dr-rent.net/posts/${slug}` },
+      ],
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-800">
 
-      {/* JSON-LD 구조화 데이터 - article 밖에서 렌더링 */}
+      {/* JSON-LD 구조화 데이터 */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

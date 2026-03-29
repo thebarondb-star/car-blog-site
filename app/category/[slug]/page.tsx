@@ -69,8 +69,18 @@ export default async function CategoryPage({ params }: Props) {
     ? await supabase.from('car_listings').select('*').order('is_sold', { ascending: true }).order('created_at', { ascending: false })
     : { data: [] };
 
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "홈", "item": "https://www.dr-rent.net" },
+      { "@type": "ListItem", "position": 2, "name": categoryName, "item": `https://www.dr-rent.net/category/${slug}` },
+    ],
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-16 min-h-screen bg-white">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       {/* 헤더 부분 */}
       <div className="mb-12 text-center border-b border-slate-100 pb-8">
         <Link href="/" className="inline-flex items-center text-sm text-slate-400 hover:text-slate-600 mb-4 transition">
