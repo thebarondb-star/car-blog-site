@@ -170,7 +170,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
                   전체보기 <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
                 {carListings.map((car: any) => (
                   <Link key={car.id} href={`/consult?car=${encodeURIComponent(car.car_name)}&car_id=${car.id}`}
                     className={`group bg-white rounded-2xl overflow-hidden shadow-xl shadow-slate-200/50 border border-slate-100 hover:-translate-y-1 transition duration-300 flex flex-col ${car.is_sold ? 'opacity-70' : ''}`}>
@@ -234,6 +234,21 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
                       </div>
                     </div>
                   </Link>
+                ))}
+              </div>
+
+              {/* 신뢰 포인트 - 특가차량 아래 슬림하게 */}
+              <div className="grid md:grid-cols-3 gap-3">
+                {[
+                  { title: "즉시 출고 시스템", desc: "전국 24개 렌트사 재고 통합 조회로 7일 내 인도 가능합니다." },
+                  { title: "허위견적서 진단", desc: "허위견적 진단 및 최적견적 제공." },
+                  { title: "영업 수수료 0원", desc: "불필요한 딜러 마진 ZERO 최저견적을 드립니다." },
+                ].map((item, idx) => (
+                  <div key={idx} className="bg-white px-5 py-3 rounded-xl shadow-sm border border-slate-100 flex items-center gap-3">
+                    <h3 className="font-bold text-sm text-slate-900 whitespace-nowrap">{item.title}</h3>
+                    <span className="text-slate-300">|</span>
+                    <p className="text-xs text-slate-500 leading-relaxed">{item.desc}</p>
+                  </div>
                 ))}
               </div>
             </>
