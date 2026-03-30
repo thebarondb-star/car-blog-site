@@ -18,24 +18,48 @@ const anthropic = new Anthropic({
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 2000; // 2초
 
-// 카테고리별 토픽 풀
+// 카테고리별 토픽 풀 (30개+)
 // ※ 자동차시장은 고정 토픽 없음 — 매번 실시간 뉴스 검색으로 토픽 결정
 const topicPool = {
   '호갱탈출': [
     '장기렌트 계약 시 딜러가 숨기는 5가지 수수료',
     '월렌탈료만 보면 안 되는 이유 (총비용 계산법)',
     '중도 해지 위약금 폭탄 피하는 방법',
-    '허위 견적서 구별하는 체크리스트',
+    '허위 견적서 구별하는 체크리스트 7가지',
     '선수금 없는 장기렌트 진짜 가능할까',
     '보험료 포함 vs 미포함 어떤 게 이득일까',
+    '장기렌트 계약 전 반드시 확인해야 할 특약 조항',
+    '탁송비·등록비·취급수수료 숨겨진 비용 총정리',
+    '계약 갱신 시 딜러가 노리는 수수료 함정',
+    '장기렌트 만기 후 차량 반납 vs 인수 어떤 게 나을까',
+    '렌탈료 인하 협상하는 현실적인 방법',
+    '사고 시 렌트사 보험 처리 절차 완전 정리',
+    '중고 장기렌트 계약 이전받을 때 주의할 점',
+    '최저가 견적서 함정 — 이렇게 속인다',
+    '블랙박스·썬팅 서비스 포함 vs 제외 실제 비용 비교',
+    '계약 해지 위약금 합법적으로 줄이는 방법',
+    '장기렌트 차량 사고 났을 때 내 돈 얼마 나오나',
+    '딜러 수수료 0원이라는 말, 진짜일까 가짜일까',
   ],
   '장기렌트정보': [
-    '장기렌트 vs 할부 vs 리스 완전 비교',
+    '장기렌트 vs 할부 vs 리스 2026년 완전 비교',
     '장기렌트 보험 구조 완전 분석',
     '번호판 색깔별 장기렌트 차이 (흰색 vs 노란색)',
     '신용등급별 장기렌트 조건 차이',
     '법인 vs 개인 장기렌트 어떤 게 싼가',
     '장기렌트 중도해지 가능할까 조건은',
+    '장기렌트 선수금 10% vs 30% vs 0원 총납입 비교',
+    '사업자 장기렌트 세금 혜택 완전 정리 (부가세·소득세)',
+    '장기렌트 계약 기간 36개월 vs 48개월 vs 60개월 비교',
+    '전기차 장기렌트 보조금 받는 방법과 조건',
+    '하이브리드 vs 전기차 장기렌트 비용 5년 비교',
+    '장기렌트 차량 연간 주행거리 초과 시 추가 비용',
+    '개인사업자 장기렌트 100% 비용처리 하는 방법',
+    '장기렌트 만기 반납 전 점검사항과 수리비 기준',
+    '장기렌트 신청부터 출고까지 전체 프로세스',
+    '외제차 장기렌트 vs 국산차 장기렌트 비용 비교',
+    '무사고 할인 vs 보험 포함 렌탈 어떤 게 유리할까',
+    '장기렌트로 테슬라 타는 법 — 조건과 비용 정리',
   ],
 };
 
@@ -154,20 +178,38 @@ async function selectCarMarketTopicFromNews(): Promise<{ topic: string; newsCont
 async function selectTopic(category: string): Promise<string> {
   const topics = topicPool[category as keyof typeof topicPool] || [];
 
-  // 이미 작성된 토픽 조회
+  // 이미 작성된 글 제목 조회
   const { data: existingPosts } = await supabase
     .from('posts')
     .select('title')
     .eq('category', category);
 
-  const usedTopics = new Set(existingPosts?.map((p) => p.title) || []);
+  const existingTitles = existingPosts?.map((p) => p.title.toLowerCase()) || [];
 
-  // 아직 안 쓴 토픽 찾기
-  const availableTopics = topics.filter((topic) => !usedTopics.has(topic));
+  // 핵심 키워드 추출 (2글자 이상 한글 단어)
+  const extractKeywords = (text: string) =>
+    text.match(/[가-힣]{2,}/g) || [];
+
+  // 유사도 체크: 기존 글과 핵심 키워드 2개 이상 겹치면 중복으로 간주
+  const isSimilar = (topic: string) => {
+    const topicKws = extractKeywords(topic);
+    return existingTitles.some(title => {
+      const titleKws = extractKeywords(title);
+      const overlap = topicKws.filter(kw => titleKws.includes(kw));
+      return overlap.length >= 2;
+    });
+  };
+
+  // 유사하지 않은 토픽만 선택
+  const availableTopics = topics.filter(topic => !isSimilar(topic));
 
   if (availableTopics.length === 0) {
-    // 모든 토픽을 썼으면 첫 번째 토픽부터 다시 시작
-    return topics[Math.floor(Math.random() * topics.length)];
+    // 모두 유사하면 기존 제목과 완전 일치하지 않는 것 중 랜덤
+    const usedTitles = new Set(existingTitles);
+    const notExact = topics.filter(t => !usedTitles.has(t.toLowerCase()));
+    return notExact.length > 0
+      ? notExact[Math.floor(Math.random() * notExact.length)]
+      : topics[Math.floor(Math.random() * topics.length)];
   }
 
   return availableTopics[Math.floor(Math.random() * availableTopics.length)];
