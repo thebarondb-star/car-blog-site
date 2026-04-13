@@ -187,8 +187,8 @@ async function selectTopic(category: string): Promise<string> {
   const existingTitles = existingPosts?.map((p) => p.title.toLowerCase()) || [];
 
   // 핵심 키워드 추출 (2글자 이상 한글 단어)
-  const extractKeywords = (text: string) =>
-    text.match(/[가-힣]{2,}/g) || [];
+  const extractKeywords = (text: string): string[] =>
+    text.match(/[가-힣]{2,}/g) ?? [];
 
   // 유사도 체크: 기존 글과 핵심 키워드 2개 이상 겹치면 중복으로 간주
   const isSimilar = (topic: string) => {
@@ -1005,18 +1005,21 @@ async function savePost(postData: {
 }
 
 /**
- * POST /api/auto-publish - 메인 핸들러 (SEO 최적화 버전)
+ * 인증 검증 (Vercel Cron: Authorization: Bearer, 수동: x-cron-secret)
  */
-export async function POST(request: NextRequest): Promise<NextResponse<AutoPublishResponse>> {
+function isAuthorized(request: NextRequest): boolean {
+  const authHeader = request.headers.get('authorization');
+  if (authHeader === `Bearer ${process.env.CRON_SECRET}`) return true;
+  const legacySecret = request.headers.get('x-cron-secret');
+  if (legacySecret === process.env.CRON_SECRET) return true;
+  return false;
+}
+
+/**
+ * 자동 발행 핵심 로직
+ */
+async function runAutoPublish(): Promise<NextResponse<AutoPublishResponse>> {
   try {
-    // 1. Cron Secret 검증
-    const cronSecret = request.headers.get('x-cron-secret');
-    if (cronSecret !== process.env.CRON_SECRET) {
-      return NextResponse.json(
-        { success: false, message: '인증 실패', error: 'Invalid CRON_SECRET' },
-        { status: 401 }
-      );
-    }
 
     console.log('[AUTO-PUBLISH] 🚀 자동 글 발행 시작...');
 
@@ -1148,12 +1151,27 @@ export async function POST(request: NextRequest): Promise<NextResponse<AutoPubli
 }
 
 /**
- * GET /api/auto-publish - 상태 확인 (테스트용)
+ * GET /api/auto-publish - Vercel Cron 진입점
  */
-export async function GET(): Promise<NextResponse> {
-  return NextResponse.json({
-    status: 'Auto-publish API ready',
-    schedule: 'Daily at UTC 00:00 (KST 09:00)',
-    categories: ['호갱탈출', '장기렌트정보', '자동차시장'],
-  });
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  if (!isAuthorized(request)) {
+    return NextResponse.json(
+      { success: false, message: '인증 실패', error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+  return runAutoPublish();
+}
+
+/**
+ * POST /api/auto-publish - 수동 호출용
+ */
+export async function POST(request: NextRequest): Promise<NextResponse<AutoPublishResponse>> {
+  if (!isAuthorized(request)) {
+    return NextResponse.json(
+      { success: false, message: '인증 실패', error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+  return runAutoPublish();
 }

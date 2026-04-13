@@ -230,12 +230,16 @@ ${typeGuide}
 /**
  * POST /api/car-market-publish
  */
-export async function POST(request: NextRequest): Promise<NextResponse> {
+function isAuthorized(request: NextRequest): boolean {
+  const authHeader = request.headers.get('authorization');
+  if (authHeader === `Bearer ${process.env.CRON_SECRET}`) return true;
+  const legacySecret = request.headers.get('x-cron-secret');
+  if (legacySecret === process.env.CRON_SECRET) return true;
+  return false;
+}
+
+async function runCarMarketPublish(): Promise<NextResponse> {
   try {
-    const cronSecret = request.headers.get('x-cron-secret');
-    if (cronSecret !== process.env.CRON_SECRET) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
 
     console.log('[CAR-MARKET] 🚀 자동차시장 글 발행 시작...');
 
@@ -330,10 +334,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-export async function GET(): Promise<NextResponse> {
-  return NextResponse.json({
-    status: 'Car market auto-publish ready',
-    schedule: 'Daily at UTC 01:00 (KST 10:00)',
-    logic: '신차 감지 시 신차 글, 아니면 시장 동향 글',
-  });
+/**
+ * GET /api/car-market-publish - Vercel Cron 진입점
+ */
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  }
+  return runCarMarketPublish();
+}
+
+/**
+ * POST /api/car-market-publish - 수동 호출용
+ */
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  }
+  return runCarMarketPublish();
 }
