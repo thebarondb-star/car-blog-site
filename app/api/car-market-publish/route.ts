@@ -139,8 +139,19 @@ Date: ${TODAY_KR}
 Topic: ${topic}
 Type: ${isNewCar ? '신차 출시/공개' : '자동차 시장 동향'}
 
+image_slots 3개 규칙:
+※ 이미지는 Unsplash stock photo임. 수치·표·그래프는 이미지가 아닌 본문 HTML 표로 처리할 것.
+※ 이미지는 반드시 "실제 사진에 찍힐 수 있는 장면"만 묘사할 것.
+- query: 실제 사진 장면 기준 영어 검색어 (2-4단어)
+- alt: 주제 키워드 + 사진에 실제로 보이는 장면 묘사 (15-40자 한글). 데이터·수치 설명 금지.
+  ✅ 좋은 예: "신형 현대 아이오닉9 측면 외관 디자인", "자동차 전시장에서 신차를 살펴보는 고객"
+  ❌ 나쁜 예: "전기차 보조금 비교표", "신차 가격 인상 현황" (사진에 없는 데이터 설명 금지)
+- caption: 이 사진이 본문 어느 맥락에서 등장하는지 독자에게 한 줄 설명 (15-35자). 데이터 설명 금지.
+  ✅ 좋은 예: "전시장에서 실차를 직접 확인하는 것이 중요하다"
+  ❌ 나쁜 예: "모델별 가격 비교" (금지)
+
 Return ONLY this JSON:
-{"title":"제목(30자이내)","slug":"english-slug","desc_text":"메타설명(100-120자)","image_query":"english 2-3 words for Unsplash","keywords":["키워드1","키워드2","키워드3","키워드4","키워드5"],"image_slots":[{"query":"english query 1","alt":"SEO alt 한글 (차종+장면+맥락)","caption":"독자 설명 한글"},{"query":"english query 2","alt":"SEO alt 한글","caption":"독자 설명 한글"},{"query":"english query 3","alt":"SEO alt 한글","caption":"독자 설명 한글"}]}`;
+{"title":"제목(30자이내)","slug":"english-slug","desc_text":"메타설명(100-120자)","image_query":"english 2-3 words for Unsplash","keywords":["키워드1","키워드2","키워드3","키워드4","키워드5"],"image_slots":[{"query":"english query 1","alt":"SEO alt 한글 (실제 장면 묘사)","caption":"독자 설명 한글 (장면 맥락)"},{"query":"english query 2","alt":"SEO alt 한글","caption":"독자 설명 한글"},{"query":"english query 3","alt":"SEO alt 한글","caption":"독자 설명 한글"}]}`;
 
   let meta: Record<string, unknown> = {};
   try {
